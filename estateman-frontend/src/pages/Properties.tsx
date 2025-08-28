@@ -315,7 +315,14 @@ const Properties = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {properties.map((property) => (
+                      {properties.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            No properties available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        properties.map((property) => (
                         <TableRow key={property.id}>
                           <TableCell>
                             <div>
@@ -363,14 +370,20 @@ const Properties = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
             ) : !loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {properties.map((property) => (
+                {properties.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No properties available
+                  </div>
+                ) : (
+                  properties.map((property) => (
                   <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
                       <img
@@ -432,7 +445,8 @@ const Properties = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </div>
             ) : null}
           </TabsContent>

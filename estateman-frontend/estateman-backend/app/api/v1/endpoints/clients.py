@@ -48,7 +48,7 @@ def get_client(
     service = ClientService(db)
     client = service.get_client(client_id)
     if not client:
-        raise HTTPException(status_code=404, detail={"message": "No Client Found"})
+        return {"message": "The client you are trying to access does not exist or has been removed"}
     return client
 
 @router.put("/{client_id}", response_model=ClientResponse)
@@ -61,7 +61,7 @@ def update_client(
     service = ClientService(db)
     client = service.update_client(client_id, client_data)
     if not client:
-        raise HTTPException(status_code=404, detail={"message": "No Client Found"})
+        return {"message": "The client you are trying to update does not exist or has been removed"}
     return client
 
 @router.delete("/{client_id}")
@@ -72,7 +72,7 @@ def delete_client(
 ):
     service = ClientService(db)
     if not service.delete_client(client_id):
-        raise HTTPException(status_code=404, detail={"message": "No Client Found"})
+        return {"message": "The client you are trying to delete does not exist or has already been removed"}
     return {"message": "Client deleted successfully"}
 
 @router.get("/analytics/overview", response_model=ClientAnalytics)
@@ -116,7 +116,7 @@ def get_lead(
     service = LeadService(db)
     lead = service.get_lead(lead_id)
     if not lead:
-        raise HTTPException(status_code=404, detail={"message": "No Lead Found"})
+        return {"message": "The lead you are trying to access does not exist or has been removed"}
     return lead
 
 @router.put("/leads/{lead_id}", response_model=LeadResponse)
@@ -129,7 +129,7 @@ def update_lead(
     service = LeadService(db)
     lead = service.update_lead(lead_id, lead_data)
     if not lead:
-        raise HTTPException(status_code=404, detail={"message": "No Lead Found"})
+        return {"message": "The lead you are trying to update does not exist or has been removed"}
     return lead
 
 @router.get("/leads/analytics/pipeline", response_model=List[LeadPipeline])
@@ -197,8 +197,8 @@ def redeem_loyalty_points(
 ):
     service = LoyaltyService(db)
     if not service.redeem_points(client_id, points, description):
-        raise HTTPException(status_code=400, detail={"message": "Insufficient Points or Client Not Found"})
-    return {"message": f"Redeemed {points} points for client"}
+        return {"message": "Unable to redeem points - either insufficient points available or client does not exist"}
+    return {"message": f"Successfully redeemed {points} points for client"}
 
 @router.get("/{client_id}/loyalty/transactions/", response_model=List[LoyaltyTransactionResponse])
 def get_loyalty_transactions(

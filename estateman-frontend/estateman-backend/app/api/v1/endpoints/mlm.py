@@ -43,7 +43,7 @@ def get_mlm_partner(
     service = MLMService(db)
     partner = service.get_partner(partner_id)
     if not partner:
-        return {"message": "No MLM Partner Found"}
+        return {"message": "The MLM partner you are trying to access does not exist or has been removed"}
     return partner
 
 @router.put("/partners/{partner_id}", response_model=MLMPartnerResponse)
@@ -56,7 +56,7 @@ def update_mlm_partner(
     service = MLMService(db)
     partner = service.update_partner(partner_id, partner_data)
     if not partner:
-        return {"message": "No MLM Partner Found"}
+        return {"message": "The MLM partner you are trying to update does not exist or has been removed"}
     return partner
 
 @router.get("/partners/{partner_id}/downline", response_model=List[MLMPartnerResponse])
@@ -79,7 +79,7 @@ def get_mlm_tree(
     service = MLMService(db)
     tree = service.get_mlm_tree(partner_id)
     if not tree:
-        return {"message": "No MLM Tree Found"}
+        return {"message": "No MLM network tree data available for this partner"}
     return tree
 
 @router.post("/partners/{partner_id}/update-stats")

@@ -288,7 +288,12 @@ const Realtors = () => {
 
             {/* Realtors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRealtors.map((realtor) => (
+              {filteredRealtors.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  No realtors available
+                </div>
+              ) : (
+                filteredRealtors.map((realtor) => (
                 <Card key={realtor.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -367,7 +372,8 @@ const Realtors = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -391,7 +397,14 @@ const Realtors = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {realtors.map((realtor) => (
+                    {realtors.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No realtors available
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      realtors.map((realtor) => (
                       <TableRow key={realtor.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
@@ -431,7 +444,8 @@ const Realtors = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -457,7 +471,14 @@ const Realtors = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {realtors.map((realtor) => {
+                    {realtors.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No realtors available
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      realtors.map((realtor) => {
                       const remaining = realtor.monthly_target - realtor.monthly_earned
                       return (
                         <TableRow key={realtor.id}>
@@ -486,7 +507,8 @@ const Realtors = () => {
                           </TableCell>
                         </TableRow>
                       )
-                    })}
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

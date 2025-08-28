@@ -47,7 +47,7 @@ def get_realtor(
     service = RealtorService(db)
     realtor = service.get_realtor(realtor_id)
     if not realtor:
-        raise HTTPException(status_code=404, detail={"message": "No Realtor Found"})
+        return {"message": "The realtor you are trying to access does not exist or has been removed"}
     return realtor
 
 @router.put("/{realtor_id}", response_model=RealtorResponse)
@@ -60,7 +60,7 @@ def update_realtor(
     service = RealtorService(db)
     realtor = service.update_realtor(realtor_id, realtor_data)
     if not realtor:
-        raise HTTPException(status_code=404, detail={"message": "No Realtor Found"})
+        return {"message": "The realtor you are trying to update does not exist or has been removed"}
     return realtor
 
 @router.delete("/{realtor_id}")
@@ -71,7 +71,7 @@ def delete_realtor(
 ):
     service = RealtorService(db)
     if not service.delete_realtor(realtor_id):
-        raise HTTPException(status_code=404, detail={"message": "No Realtor Found"})
+        return {"message": "The realtor you are trying to delete does not exist or has already been removed"}
     return {"message": "Realtor deleted successfully"}
 
 @router.get("/analytics/overview", response_model=RealtorAnalytics)
@@ -90,7 +90,18 @@ def get_realtors_dropdown(
 ):
     service = RealtorService(db)
     realtors = service.get_realtors(0, 100, None, None, search)
-    return [{"id": r.user_id, "name": r.name or f"Realtor {r.realtor_id}", "realtor_id": r.realtor_id} for r in realtors or []]
+    if not realtors:
+        return []
+    
+    result = []
+    for r in realtors:
+        if r.user_id and r.realtor_id:
+            result.append({
+                "id": r.user_id, 
+                "name": r.name or f"Realtor {r.realtor_id}", 
+                "realtor_id": r.realtor_id
+            })
+    return result
 
 @router.get("/performance/{realtor_id}")
 def get_realtor_performance(
@@ -101,7 +112,7 @@ def get_realtor_performance(
     service = RealtorService(db)
     performance = service.get_realtor_performance(realtor_id)
     if not performance:
-        raise HTTPException(status_code=404, detail={"message": "No Realtor Performance Data Found"})
+        return {"message": "No performance data available for this realtor - they may be new or inactive"}
     return performance
 
 # Commission endpoints

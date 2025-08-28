@@ -411,7 +411,12 @@ const Clients = () => {
 
             {/* Clients Grid/List */}
             <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-              {filteredClients.map((client) => (
+              {filteredClients.length === 0 ? (
+                <div className={viewMode === "grid" ? "col-span-full text-center py-8 text-muted-foreground" : "text-center py-8 text-muted-foreground"}>
+                  No clients available
+                </div>
+              ) : (
+                filteredClients.map((client) => (
                 <Card key={client.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -505,7 +510,8 @@ const Clients = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -529,7 +535,14 @@ const Clients = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clients.map((client) => (
+                    {clients.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No clients available
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      clients.map((client) => (
                       <TableRow key={client.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
@@ -578,7 +591,8 @@ const Clients = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

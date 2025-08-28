@@ -157,7 +157,12 @@ const Leads = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {leads.map((lead) => (
+              {leads.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No leads available
+                </div>
+              ) : (
+                leads.map((lead) => (
                 <div key={lead.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex items-start gap-4">
@@ -227,7 +232,8 @@ const Leads = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
