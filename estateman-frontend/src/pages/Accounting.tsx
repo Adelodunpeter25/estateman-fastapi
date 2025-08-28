@@ -36,11 +36,11 @@ const Accounting = () => {
   ]
 
   const recentTransactions = [
-    { id: 1, type: "Commission", description: "Sarah Johnson - 123 Oak St Sale", amount: "+$12,500", date: "2024-01-15", status: "Completed" },
-    { id: 2, type: "Expense", description: "Marketing Campaign - Q1", amount: "-$3,200", date: "2024-01-14", status: "Pending" },
-    { id: 3, type: "Commission", description: "Mike Wilson - Downtown Condo", amount: "+$8,750", date: "2024-01-13", status: "Completed" },
-    { id: 4, type: "Expense", description: "Office Rent - January", amount: "-$4,500", date: "2024-01-12", status: "Completed" },
-    { id: 5, type: "Commission", description: "Lisa Chen - Luxury Villa", amount: "+$25,000", date: "2024-01-11", status: "Processing" }
+    { id: 1, type: "Commission", description: "Sarah Johnson - 123 Oak St Sale", amount: "+$12,500", date: "2025-01-15", status: "Completed" },
+    { id: 2, type: "Expense", description: "Marketing Campaign - Q1", amount: "-$3,200", date: "2025-01-14", status: "Pending" },
+    { id: 3, type: "Commission", description: "Mike Wilson - Downtown Condo", amount: "+$8,750", date: "2025-01-13", status: "Completed" },
+    { id: 4, type: "Expense", description: "Office Rent - January", amount: "-$4,500", date: "2025-01-12", status: "Completed" },
+    { id: 5, type: "Commission", description: "Lisa Chen - Luxury Villa", amount: "+$25,000", date: "2025-01-11", status: "Processing" }
   ]
 
   const expenseCategories = [
@@ -284,10 +284,10 @@ const Accounting = () => {
 
                 <div className="space-y-4">
                   {[
-                    { date: "2024-01-30", description: "Google Ads Campaign", category: "Marketing", amount: "$1,250", status: "Approved" },
-                    { date: "2024-01-29", description: "Office Supplies", category: "Office", amount: "$347", status: "Pending" },
-                    { date: "2024-01-28", description: "Client Lunch Meeting", category: "Travel", amount: "$89", status: "Approved" },
-                    { date: "2024-01-27", description: "Software License", category: "Technology", amount: "$299", status: "Approved" }
+                    { date: "2025-01-30", description: "Google Ads Campaign", category: "Marketing", amount: "$1,250", status: "Approved" },
+                    { date: "2025-01-29", description: "Office Supplies", category: "Office", amount: "$347", status: "Pending" },
+                    { date: "2025-01-28", description: "Client Lunch Meeting", category: "Travel", amount: "$89", status: "Approved" },
+                    { date: "2025-01-27", description: "Software License", category: "Technology", amount: "$299", status: "Approved" }
                   ].map((expense, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-4">

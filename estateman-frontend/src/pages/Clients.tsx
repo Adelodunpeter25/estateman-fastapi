@@ -27,14 +27,14 @@ const clients = [
     joinDate: "2023-08-15",
     realtorId: "R001",
     realtorName: "Sarah Johnson",
-    realtorReferralId: "SJ2024001",
+    realtorReferralId: "SJ2025001",
     totalTransactions: 3,
     totalValue: 1250000,
     currentInterest: "Luxury Condos",
     preferredLocation: "Downtown",
     budget: { min: 800000, max: 1200000 },
     stage: "Viewing Properties",
-    lastContact: "2024-01-28",
+    lastContact: "2025-01-28",
     avatar: "/placeholder.svg",
     notes: "High-value client interested in luxury properties. Prefers modern architecture."
   },
@@ -49,14 +49,14 @@ const clients = [
     joinDate: "2023-11-20",
     realtorId: "R002",
     realtorName: "Michael Chen",
-    realtorReferralId: "MC2024002",
+    realtorReferralId: "MC2025002",
     totalTransactions: 1,
     totalValue: 485000,
     currentInterest: "Family Homes",
     preferredLocation: "Suburbs",
     budget: { min: 400000, max: 600000 },
     stage: "Under Contract",
-    lastContact: "2024-01-29",
+    lastContact: "2025-01-29",
     avatar: "/placeholder.svg",
     notes: "First-time homebuyer looking for family-friendly neighborhood."
   },
@@ -71,14 +71,14 @@ const clients = [
     joinDate: "2022-12-05",
     realtorId: "R003",
     realtorName: "Emily Rodriguez",
-    realtorReferralId: "ER2024003",
+    realtorReferralId: "ER2025003",
     totalTransactions: 4,
     totalValue: 2100000,
     currentInterest: "Investment Properties",
     preferredLocation: "Business District",
     budget: { min: 300000, max: 800000 },
     stage: "Negotiating",
-    lastContact: "2024-01-30",
+    lastContact: "2025-01-30",
     avatar: "/placeholder.svg",
     notes: "Experienced investor with multiple properties. Focuses on ROI and rental potential."
   },
@@ -90,17 +90,17 @@ const clients = [
     status: "Lead",
     leadScore: 65,
     loyaltyPoints: 0,
-    joinDate: "2024-01-15",
+    joinDate: "2025-01-15",
     realtorId: "R001",
     realtorName: "Sarah Johnson",
-    realtorReferralId: "SJ2024001",
+    realtorReferralId: "SJ2025001",
     totalTransactions: 0,
     totalValue: 0,
     currentInterest: "Starter Homes",
     preferredLocation: "Midtown",
     budget: { min: 250000, max: 400000 },
     stage: "Initial Consultation",
-    lastContact: "2024-01-30",
+    lastContact: "2025-01-30",
     avatar: "/placeholder.svg",
     notes: "New lead interested in purchasing first home. Needs financing guidance."
   }
@@ -203,9 +203,9 @@ const Clients = () => {
                       <SelectValue placeholder="Select realtor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SJ2024001">Sarah Johnson (SJ2024001)</SelectItem>
-                      <SelectItem value="MC2024002">Michael Chen (MC2024002)</SelectItem>
-                      <SelectItem value="ER2024003">Emily Rodriguez (ER2024003)</SelectItem>
+                      <SelectItem value="SJ2025001">Sarah Johnson (SJ2025001)</SelectItem>
+                      <SelectItem value="MC2025002">Michael Chen (MC2025002)</SelectItem>
+                      <SelectItem value="ER2025003">Emily Rodriguez (ER2025003)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

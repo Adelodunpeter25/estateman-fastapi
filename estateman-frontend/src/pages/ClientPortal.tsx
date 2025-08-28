@@ -38,7 +38,7 @@ const ClientPortal = () => {
       address: "Downtown District",
       offer: 445000,
       status: "pending",
-      date: "2024-01-22",
+      date: "2025-01-22",
       agent: "Sarah Wilson"
     },
     {
@@ -47,7 +47,7 @@ const ClientPortal = () => {
       address: "Suburban Area",
       offer: 315000,
       status: "countered",
-      date: "2024-01-20",
+      date: "2025-01-20",
       agent: "Mike Chen"
     },
     {
@@ -56,7 +56,7 @@ const ClientPortal = () => {
       address: "Uptown",
       offer: 575000,
       status: "accepted",
-      date: "2024-01-18",
+      date: "2025-01-18",
       agent: "Emily Rodriguez"
     }
   ]
@@ -66,7 +66,7 @@ const ClientPortal = () => {
       id: "R001",
       description: "Home Inspection Fee",
       amount: 450,
-      date: "2024-01-20",
+      date: "2025-01-20",
       property: "123 Oak Street",
       status: "paid"
     },
@@ -74,7 +74,7 @@ const ClientPortal = () => {
       id: "R002", 
       description: "Appraisal Fee",
       amount: 600,
-      date: "2024-01-15",
+      date: "2025-01-15",
       property: "123 Oak Street", 
       status: "paid"
     },
@@ -82,7 +82,7 @@ const ClientPortal = () => {
       id: "R003",
       description: "Commission Payment",
       amount: 18900,
-      date: "2024-01-10",
+      date: "2025-01-10",
       property: "789 Maple Drive",
       status: "paid"
     }
@@ -93,7 +93,7 @@ const ClientPortal = () => {
       id: "1",
       title: "New Market Report Available",
       content: "Q4 2023 market analysis is now available for download.",
-      date: "2024-01-22",
+      date: "2025-01-22",
       priority: "normal",
       type: "info"
     },
@@ -101,7 +101,7 @@ const ClientPortal = () => {
       id: "2",
       title: "Interest Rate Update",
       content: "Current mortgage rates have changed. Contact your agent for details.",
-      date: "2024-01-20", 
+      date: "2025-01-20", 
       priority: "high",
       type: "alert"
     },
@@ -109,7 +109,7 @@ const ClientPortal = () => {
       id: "3",
       title: "Holiday Office Hours",
       content: "Our office will have modified hours during the holiday season.",
-      date: "2024-01-18",
+      date: "2025-01-18",
       priority: "normal",
       type: "info"
     }
@@ -119,7 +119,7 @@ const ClientPortal = () => {
     {
       id: "1",
       title: "First-Time Buyer Seminar",
-      date: "2024-02-05",
+      date: "2025-02-05",
       time: "6:00 PM",
       location: "Downtown Office",
       spots: 25,
@@ -129,7 +129,7 @@ const ClientPortal = () => {
     {
       id: "2",
       title: "Open House Tour",
-      date: "2024-02-10", 
+      date: "2025-02-10", 
       time: "2:00 PM",
       location: "Various Locations",
       spots: 15,
@@ -139,7 +139,7 @@ const ClientPortal = () => {
     {
       id: "3",
       title: "Investment Property Workshop",
-      date: "2024-02-15",
+      date: "2025-02-15",
       time: "7:00 PM", 
       location: "Conference Center",
       spots: 30,

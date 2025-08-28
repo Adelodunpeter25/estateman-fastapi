@@ -36,7 +36,7 @@ export function SalesChart() {
       </CardHeader>
       <CardContent>
         <div className="h-64 md:h-80">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <LineChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 

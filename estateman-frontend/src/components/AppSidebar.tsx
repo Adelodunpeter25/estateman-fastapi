@@ -119,7 +119,7 @@ export function AppSidebar() {
             </div>
             {!collapsed && (
               <div>
-                <h2 className="font-bold text-base md:text-lg text-primary">RealtyPro</h2>
+                <h2 className="font-bold text-base md:text-lg text-primary">Estateman</h2>
                 <p className="text-xs text-muted-foreground">Admin Dashboard</p>
               </div>
             )}

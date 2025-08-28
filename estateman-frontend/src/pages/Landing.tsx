@@ -101,7 +101,7 @@ const Landing = () => {
     {
       name: "Sarah Johnson",
       role: "Broker, Elite Properties",
-      content: "RealtyPro transformed our business. We've seen a 40% increase in sales efficiency and our agents love the intuitive interface.",
+      content: "Estateman transformed our business. We've seen a 40% increase in sales efficiency and our agents love the intuitive interface.",
       rating: 5
     },
     {
@@ -128,14 +128,14 @@ const Landing = () => {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Building2 className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-xl text-primary">RealtyPro</span>
+              <span className="font-bold text-xl text-primary">Estateman</span>
             </div>
             
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
               <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
               <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-              <Link to="/">
+              <Link to="/login">
                 <Button>Get Started</Button>
               </Link>
             </div>
@@ -164,7 +164,7 @@ const Landing = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/">
+                <Link to="/signup">
                   <Button size="lg" className="text-lg px-8 py-6">
                     Start Free Trial
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -314,7 +314,7 @@ const Landing = () => {
               Trusted by Real Estate Professionals
             </h2>
             <p className="text-xl text-muted-foreground">
-              See what our customers have to say about RealtyPro
+              See what our customers have to say about Estateman
             </p>
           </div>
 
@@ -354,10 +354,10 @@ const Landing = () => {
             Ready to Transform Your Real Estate Business?
           </h2>
           <p className="text-xl opacity-90">
-            Join thousands of successful real estate professionals using RealtyPro
+            Join thousands of successful real estate professionals using Estateman
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/">
+            <Link to="/signup">
               <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
                 Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -379,7 +379,7 @@ const Landing = () => {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <Building2 className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <span className="font-bold text-xl text-primary">RealtyPro</span>
+                <span className="font-bold text-xl text-primary">Estateman</span>
               </div>
               <p className="text-muted-foreground">
                 The complete real estate management solution for modern professionals.
@@ -418,7 +418,7 @@ const Landing = () => {
           </div>
           
           <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 RealtyPro. All rights reserved.</p>
+            <p>&copy; 2025 Estateman. All rights reserved.</p>
           </div>
         </div>
       </footer>

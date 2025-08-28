@@ -38,7 +38,7 @@ const Newsletters = () => {
       openRate: 36.5,
       clickRate: 9.2,
       status: "Sent",
-      sentDate: "2024-01-15",
+      sentDate: "2025-01-15",
       type: "Monthly"
     },
     {
@@ -49,7 +49,7 @@ const Newsletters = () => {
       openRate: 28.7,
       clickRate: 6.8,
       status: "Sent",
-      sentDate: "2024-01-12",
+      sentDate: "2025-01-12",
       type: "Promotional"
     },
     {
@@ -60,7 +60,7 @@ const Newsletters = () => {
       openRate: 42.1,
       clickRate: 12.4,
       status: "Sent",
-      sentDate: "2024-01-10",
+      sentDate: "2025-01-10",
       type: "VIP"
     },
     {

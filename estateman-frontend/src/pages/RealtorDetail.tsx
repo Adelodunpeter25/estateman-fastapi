@@ -20,7 +20,7 @@ const getRealtorData = (id: string) => {
       phone: "+1 (555) 123-4567",
       level: "Senior Agent",
       status: "Active",
-      referralId: "SJ2024001",
+      referralId: "SJ2025001",
       joinDate: "2022-01-15",
       totalClients: 45,
       activeDeals: 8,
@@ -44,7 +44,7 @@ const getRealtorData = (id: string) => {
           status: "Active",
           stage: "Viewing Properties",
           value: 1250000,
-          lastContact: "2024-01-28"
+          lastContact: "2025-01-28"
         },
         {
           id: "C004",
@@ -52,14 +52,14 @@ const getRealtorData = (id: string) => {
           status: "Lead",
           stage: "Initial Consultation",
           value: 0,
-          lastContact: "2024-01-30"
+          lastContact: "2025-01-30"
         }
       ],
       recentActivities: [
-        { date: "2024-01-30", activity: "Scheduled property viewing with David Thompson", type: "appointment" },
-        { date: "2024-01-29", activity: "Closed deal for luxury condo - $1.2M", type: "sale" },
-        { date: "2024-01-28", activity: "New client consultation with Lisa Anderson", type: "consultation" },
-        { date: "2024-01-27", activity: "Property listing updated for downtown penthouse", type: "listing" }
+        { date: "2025-01-30", activity: "Scheduled property viewing with David Thompson", type: "appointment" },
+        { date: "2025-01-29", activity: "Closed deal for luxury condo - $1.2M", type: "sale" },
+        { date: "2025-01-28", activity: "New client consultation with Lisa Anderson", type: "consultation" },
+        { date: "2025-01-27", activity: "Property listing updated for downtown penthouse", type: "listing" }
       ]
     }
   }

@@ -193,7 +193,7 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
                 </div>
                 <div>
                   <p className="font-medium">Listed Date</p>
-                  <p className="text-muted-foreground">{property.listedDate || "Nov 15, 2024"}</p>
+                  <p className="text-muted-foreground">{property.listedDate || "Nov 15, 2025"}</p>
                 </div>
               </div>
             </div>

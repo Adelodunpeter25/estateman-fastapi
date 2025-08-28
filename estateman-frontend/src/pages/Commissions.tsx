@@ -24,7 +24,7 @@ const Commissions = () => {
       rate: 6,
       commission: 27000,
       status: "paid",
-      date: "2024-01-15",
+      date: "2025-01-15",
       client: "Johnson Family"
     },
     {
@@ -35,7 +35,7 @@ const Commissions = () => {
       rate: 5.5,
       commission: 17600,
       status: "pending",
-      date: "2024-01-20",
+      date: "2025-01-20",
       client: "Davis Corp"
     },
     {
@@ -46,7 +46,7 @@ const Commissions = () => {
       rate: 6.5,
       commission: 37700,
       status: "calculating",
-      date: "2024-01-22",
+      date: "2025-01-22",
       client: "Smith LLC"
     },
     {
@@ -57,7 +57,7 @@ const Commissions = () => {
       rate: 6,
       commission: 16500,
       status: "paid",
-      date: "2024-01-10",
+      date: "2025-01-10",
       client: "Brown Family"
     }
   ]
@@ -231,7 +231,7 @@ const Commissions = () => {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span>January 2024</span>
+                      <span>January 2025</span>
                       <span className="font-medium">$45,200</span>
                     </div>
                     <Progress value={75} className="h-2" />

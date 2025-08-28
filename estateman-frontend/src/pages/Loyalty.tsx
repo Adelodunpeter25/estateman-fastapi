@@ -338,7 +338,7 @@ const Loyalty = () => {
                         </div>
                         <div className="font-semibold text-gold">{member.points.toLocaleString()}</div>
                         <div>{member.deals}</div>
-                        <div className="text-sm text-muted-foreground">Jan {15 + index}, 2024</div>
+                        <div className="text-sm text-muted-foreground">Jan {15 + index}, 2025</div>
                         <div>
                           <Badge variant="outline" className="bg-success/10 text-success">Active</Badge>
                         </div>

@@ -34,11 +34,11 @@ import {
 
 const Settings = () => {
   const generalSettings = [
-    { label: "Company Name", value: "RealtyPro Agency", type: "input" },
-    { label: "Business Email", value: "admin@realtypro.com", type: "email" },
+    { label: "Company Name", value: "Estateman Agency", type: "input" },
+    { label: "Business Email", value: "admin@estateman.com", type: "email" },
     { label: "Phone Number", value: "+1 (555) 123-4567", type: "tel" },
     { label: "Address", value: "123 Business Ave, Suite 100", type: "textarea" },
-    { label: "Website", value: "https://realtypro.com", type: "url" },
+    { label: "Website", value: "https://estateman.com", type: "url" },
     { label: "Time Zone", value: "America/New_York", type: "select" }
   ]
 
@@ -186,7 +186,7 @@ const Settings = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
                     <Label>Business License Number</Label>
-                    <Input defaultValue="BL-2024-001234" />
+                    <Input defaultValue="BL-2025-001234" />
                   </div>
                   <div className="space-y-2">
                     <Label>Tax ID / EIN</Label>
@@ -493,7 +493,7 @@ const Settings = () => {
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <Label>API Base URL</Label>
-                      <Input defaultValue="https://api.realtypro.com/v1" />
+                      <Input defaultValue="https://api.estateman.com/v1" />
                     </div>
                     <div className="space-y-2">
                       <Label>Webhook Endpoint</Label>
@@ -617,7 +617,7 @@ const Settings = () => {
                     </div>
                     <div className="space-y-2 mb-4">
                       <p className="text-xl md:text-2xl font-bold">$99/month</p>
-                      <p className="text-sm text-muted-foreground">Billed monthly • Next billing: March 15, 2024</p>
+                      <p className="text-sm text-muted-foreground">Billed monthly • Next billing: March 15, 2025</p>
                     </div>
                     <Button className="w-full">Manage Plan</Button>
                   </div>
@@ -663,8 +663,8 @@ const Settings = () => {
                   <h4 className="font-medium">Billing History</h4>
                   <div className="space-y-2">
                     {[
-                      { date: "Feb 15, 2024", amount: "$99.00", status: "Paid" },
-                      { date: "Jan 15, 2024", amount: "$99.00", status: "Paid" },
+                      { date: "Feb 15, 2025", amount: "$99.00", status: "Paid" },
+                      { date: "Jan 15, 2025", amount: "$99.00", status: "Paid" },
                       { date: "Dec 15, 2023", amount: "$99.00", status: "Paid" }
                     ].map((invoice, index) => (
                       <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded gap-2">

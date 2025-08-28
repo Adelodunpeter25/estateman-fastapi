@@ -295,7 +295,7 @@ const Analytics = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>February 2024</span>
+                      <span>February 2025</span>
                       <span className="font-medium">$385,000</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -305,7 +305,7 @@ const Analytics = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>March 2024</span>
+                      <span>March 2025</span>
                       <span className="font-medium">$420,000</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -315,7 +315,7 @@ const Analytics = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>April 2024</span>
+                      <span>April 2025</span>
                       <span className="font-medium">$445,000</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">

@@ -27,7 +27,7 @@ const tasks = [
     description: "Schedule and coordinate professional photography for the waterfront villa listing",
     assignee: "Sarah Johnson",
     assigneeInitials: "SJ",
-    dueDate: "2024-02-15",
+    dueDate: "2025-02-15",
     priority: "High",
     status: "In Progress",
     progress: 65,
@@ -40,7 +40,7 @@ const tasks = [
     description: "Follow up with Jennifer Martinez regarding property viewing feedback",
     assignee: "Mike Chen",
     assigneeInitials: "MC",
-    dueDate: "2024-02-10",
+    dueDate: "2025-02-10",
     priority: "High",
     status: "Pending",
     progress: 0,
@@ -53,7 +53,7 @@ const tasks = [
     description: "Review and finalize purchase agreement for downtown condominium",
     assignee: "Emily Davis",
     assigneeInitials: "ED",
-    dueDate: "2024-02-12",
+    dueDate: "2025-02-12",
     priority: "Medium",
     status: "In Progress",
     progress: 80,
@@ -66,7 +66,7 @@ const tasks = [
     description: "Prepare quarterly market analysis for suburban properties",
     assignee: "James Wilson",
     assigneeInitials: "JW",
-    dueDate: "2024-02-20",
+    dueDate: "2025-02-20",
     priority: "Medium",
     status: "Not Started",
     progress: 0,
@@ -79,7 +79,7 @@ const tasks = [
     description: "Organize and prepare open house event for weekend showing",
     assignee: "Lisa Anderson",
     assigneeInitials: "LA",
-    dueDate: "2024-02-08",
+    dueDate: "2025-02-08",
     priority: "High",
     status: "Completed",
     progress: 100,
@@ -95,7 +95,7 @@ const projects = [
     tasksTotal: 12,
     tasksCompleted: 8,
     team: ["SJ", "MC", "ED"],
-    deadline: "2024-03-01",
+    deadline: "2025-03-01",
     status: "On Track"
   },
   {
@@ -104,7 +104,7 @@ const projects = [
     tasksTotal: 8,
     tasksCompleted: 5,
     team: ["MC", "LA"],
-    deadline: "2024-02-15",
+    deadline: "2025-02-15",
     status: "At Risk"
   },
   {
@@ -113,7 +113,7 @@ const projects = [
     tasksTotal: 6,
     tasksCompleted: 6,
     team: ["JW", "ED"],
-    deadline: "2024-02-10",
+    deadline: "2025-02-10",
     status: "Completed"
   }
 ]

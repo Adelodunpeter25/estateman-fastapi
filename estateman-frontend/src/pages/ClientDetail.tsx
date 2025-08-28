@@ -24,14 +24,14 @@ const getClientData = (id: string) => {
       joinDate: "2023-08-15",
       realtorId: "R001",
       realtorName: "Sarah Johnson",
-      realtorReferralId: "SJ2024001",
+      realtorReferralId: "SJ2025001",
       totalTransactions: 3,
       totalValue: 1250000,
       currentInterest: "Luxury Condos",
       preferredLocation: "Downtown",
       budget: { min: 800000, max: 1200000 },
       stage: "Viewing Properties",
-      lastContact: "2024-01-28",
+      lastContact: "2025-01-28",
       avatar: "/placeholder.svg",
       notes: "High-value client interested in luxury properties. Prefers modern architecture.",
       preferences: {
@@ -65,21 +65,21 @@ const getClientData = (id: string) => {
           property: "Penthouse Suite",
           address: "789 Elite Tower",
           value: 1200000,
-          date: "2024-01-30",
+          date: "2025-01-30",
           status: "In Progress",
           type: "Purchase"
         }
       ],
       activities: [
-        { date: "2024-01-30", activity: "Scheduled viewing for Penthouse Suite", type: "appointment" },
-        { date: "2024-01-28", activity: "Submitted offer for Elite Tower penthouse", type: "offer" },
-        { date: "2024-01-25", activity: "Property search updated with new criteria", type: "search" },
-        { date: "2024-01-22", activity: "Phone consultation with Sarah Johnson", type: "consultation" }
+        { date: "2025-01-30", activity: "Scheduled viewing for Penthouse Suite", type: "appointment" },
+        { date: "2025-01-28", activity: "Submitted offer for Elite Tower penthouse", type: "offer" },
+        { date: "2025-01-25", activity: "Property search updated with new criteria", type: "search" },
+        { date: "2025-01-22", activity: "Phone consultation with Sarah Johnson", type: "consultation" }
       ],
       documents: [
-        { name: "Pre-approval Letter", type: "Financial", date: "2024-01-15", status: "Valid" },
-        { name: "Property Inspection Report", type: "Inspection", date: "2024-01-20", status: "Completed" },
-        { name: "Purchase Agreement", type: "Legal", date: "2024-01-28", status: "Pending" }
+        { name: "Pre-approval Letter", type: "Financial", date: "2025-01-15", status: "Valid" },
+        { name: "Property Inspection Report", type: "Inspection", date: "2025-01-20", status: "Completed" },
+        { name: "Purchase Agreement", type: "Legal", date: "2025-01-28", status: "Pending" }
       ]
     }
   }

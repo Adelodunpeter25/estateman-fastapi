@@ -20,7 +20,7 @@ const sampleTreeData: TreeNode = {
   id: "1",
   name: "Sarah Johnson",
   level: "Diamond Partner",
-  referralId: "SJ2024001",
+  referralId: "SJ2025001",
   directReferrals: 24,
   monthlyCommission: 15420,
   avatar: "/placeholder.svg",
@@ -29,7 +29,7 @@ const sampleTreeData: TreeNode = {
       id: "2",
       name: "Mike Chen",
       level: "Gold Partner", 
-      referralId: "MC2024002",
+      referralId: "MC2025002",
       directReferrals: 18,
       monthlyCommission: 11280,
       children: [
@@ -37,7 +37,7 @@ const sampleTreeData: TreeNode = {
           id: "4",
           name: "James Wilson",
           level: "Bronze Partner",
-          referralId: "JW2024004", 
+          referralId: "JW2025004", 
           directReferrals: 8,
           monthlyCommission: 3450,
           children: [
@@ -45,7 +45,7 @@ const sampleTreeData: TreeNode = {
               id: "7",
               name: "Lisa Park",
               level: "Associate",
-              referralId: "LP2024007",
+              referralId: "LP2025007",
               directReferrals: 3,
               monthlyCommission: 850,
               children: []
@@ -54,7 +54,7 @@ const sampleTreeData: TreeNode = {
               id: "8", 
               name: "Tom Lee",
               level: "Associate",
-              referralId: "TL2024008",
+              referralId: "TL2025008",
               directReferrals: 2,
               monthlyCommission: 650,
               children: []
@@ -65,7 +65,7 @@ const sampleTreeData: TreeNode = {
           id: "5",
           name: "Anna Kim",
           level: "Silver Partner",
-          referralId: "AK2024005",
+          referralId: "AK2025005",
           directReferrals: 12,
           monthlyCommission: 6890,
           children: [
@@ -73,7 +73,7 @@ const sampleTreeData: TreeNode = {
               id: "9",
               name: "David Liu",
               level: "Associate", 
-              referralId: "DL2024009",
+              referralId: "DL2025009",
               directReferrals: 5,
               monthlyCommission: 1250,
               children: []
@@ -86,7 +86,7 @@ const sampleTreeData: TreeNode = {
       id: "3",
       name: "Emily Davis",
       level: "Silver Partner",
-      referralId: "ED2024003",
+      referralId: "ED2025003",
       directReferrals: 12,
       monthlyCommission: 6890,
       children: [
@@ -94,7 +94,7 @@ const sampleTreeData: TreeNode = {
           id: "6",
           name: "Robert Taylor",
           level: "Bronze Partner",
-          referralId: "RT2024006",
+          referralId: "RT2025006",
           directReferrals: 6,
           monthlyCommission: 2340,
           children: [
@@ -102,7 +102,7 @@ const sampleTreeData: TreeNode = {
               id: "10",
               name: "Maria Garcia",
               level: "Associate",
-              referralId: "MG2024010",
+              referralId: "MG2025010",
               directReferrals: 1,
               monthlyCommission: 320,
               children: []

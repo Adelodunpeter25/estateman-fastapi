@@ -30,6 +30,9 @@ import Settings from "./pages/Settings";
 import ClientPortal from "./pages/ClientPortal";
 import RealtorPortal from "./pages/RealtorPortal";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +44,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Index />} />
           <Route path="/saas-management" element={<SaasManagement />} />
           <Route path="/analytics" element={<Analytics />} />

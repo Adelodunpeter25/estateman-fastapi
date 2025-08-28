@@ -28,8 +28,8 @@ const campaigns = [
     reach: 15420,
     engagement: 8.7,
     leads: 124,
-    startDate: "2024-01-15",
-    endDate: "2024-02-15"
+    startDate: "2025-01-15",
+    endDate: "2025-02-15"
   },
   {
     id: "2",
@@ -40,7 +40,7 @@ const campaigns = [
     engagement: 12.3,
     leads: 287,
     startDate: "2023-12-01",
-    endDate: "2024-01-31"
+    endDate: "2025-01-31"
   },
   {
     id: "3",
@@ -50,8 +50,8 @@ const campaigns = [
     reach: 0,
     engagement: 0,
     leads: 0,
-    startDate: "2024-02-01",
-    endDate: "2024-03-01"
+    startDate: "2025-02-01",
+    endDate: "2025-03-01"
   }
 ]
 

@@ -26,7 +26,7 @@ const Documents = () => {
       name: "Property Purchase Agreement - 123 Oak St",
       type: "Contract",
       size: "2.4 MB",
-      lastModified: "2024-01-15",
+      lastModified: "2025-01-15",
       status: "Active",
       category: "Legal",
       owner: "Sarah Johnson"
@@ -36,17 +36,17 @@ const Documents = () => {
       name: "Marketing Brochure Template",
       type: "Template",
       size: "8.1 MB",
-      lastModified: "2024-01-14",
+      lastModified: "2025-01-14",
       status: "Draft",
       category: "Marketing",
       owner: "Mike Wilson"
     },
     {
       id: 3,
-      name: "Commission Structure 2024",
+      name: "Commission Structure 2025",
       type: "Spreadsheet",
       size: "156 KB",
-      lastModified: "2024-01-13",
+      lastModified: "2025-01-13",
       status: "Active",
       category: "Financial",
       owner: "Admin User"
@@ -56,7 +56,7 @@ const Documents = () => {
       name: "Client Onboarding Checklist",
       type: "Form",
       size: "89 KB",
-      lastModified: "2024-01-12",
+      lastModified: "2025-01-12",
       status: "Active",
       category: "Process",
       owner: "Lisa Chen"

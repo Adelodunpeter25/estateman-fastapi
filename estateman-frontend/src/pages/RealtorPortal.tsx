@@ -37,7 +37,7 @@ import { MLMTreeDiagram } from "@/components/MLMTreeDiagram"
 const realtorData = {
   id: "R001",
   name: "Sarah Johnson",
-  referralId: "SJ2024001",
+  referralId: "SJ2025001",
   email: "sarah.johnson@realty.com",
   phone: "+1 (555) 123-4567",
   level: "Diamond Partner",
@@ -67,7 +67,7 @@ const myClients = [
     leadScore: 95,
     stage: "Viewing Properties",
     totalValue: 1250000,
-    lastContact: "2024-01-28"
+    lastContact: "2025-01-28"
   },
   {
     id: "C004", 
@@ -77,7 +77,7 @@ const myClients = [
     leadScore: 65,
     stage: "Initial Consultation",
     totalValue: 0,
-    lastContact: "2024-01-30"
+    lastContact: "2025-01-30"
   }
 ]
 
@@ -86,7 +86,7 @@ const myDownline = [
   {
     id: "R002",
     name: "Mike Chen",
-    referralId: "MC2024002",
+    referralId: "MC2025002",
     level: "Gold Partner",
     directReferrals: 18,
     monthlyCommission: 11280,
@@ -95,7 +95,7 @@ const myDownline = [
   {
     id: "R003",
     name: "Emily Davis", 
-    referralId: "ED2024003",
+    referralId: "ED2025003",
     level: "Silver Partner",
     directReferrals: 12,
     monthlyCommission: 6890,
@@ -109,14 +109,14 @@ const announcements = [
     id: "1",
     title: "New Commission Structure Update",
     content: "We're excited to announce improved commission rates for Diamond Partners...",
-    date: "2024-01-30",
+    date: "2025-01-30",
     type: "important"
   },
   {
     id: "2", 
     title: "Training Webinar: Advanced Sales Techniques",
     content: "Join us for an exclusive training session on February 15th...",
-    date: "2024-01-29",
+    date: "2025-01-29",
     type: "training"
   }
 ]
@@ -126,7 +126,7 @@ const upcomingEvents = [
   {
     id: "1",
     title: "Regional Sales Conference",
-    date: "2024-02-15",
+    date: "2025-02-15",
     time: "9:00 AM - 5:00 PM",
     location: "Downtown Convention Center",
     type: "conference"
@@ -134,7 +134,7 @@ const upcomingEvents = [
   {
     id: "2",
     title: "Monthly Team Meeting", 
-    date: "2024-02-05",
+    date: "2025-02-05",
     time: "2:00 PM - 3:00 PM",
     location: "Virtual Meeting",
     type: "meeting"
@@ -520,10 +520,10 @@ const RealtorPortal = () => {
                     <h4 className="font-semibold mb-4">Recent Sales Activity</h4>
                     <div className="space-y-3">
                       {[
-                        { property: "456 Ocean View Dr", client: "Sarah Martinez", amount: "$850,000", type: "Direct", date: "2024-01-28" },
-                        { property: "123 Downtown Plaza", client: "Mike Chen (Team)", amount: "$1,200,000", type: "Indirect", date: "2024-01-26" },
-                        { property: "789 Sunset Blvd", client: "Jennifer Kim", amount: "$725,000", type: "Direct", date: "2024-01-25" },
-                        { property: "321 Garden Estates", client: "Lisa Davis (Team)", amount: "$950,000", type: "Indirect", date: "2024-01-24" }
+                        { property: "456 Ocean View Dr", client: "Sarah Martinez", amount: "$850,000", type: "Direct", date: "2025-01-28" },
+                        { property: "123 Downtown Plaza", client: "Mike Chen (Team)", amount: "$1,200,000", type: "Indirect", date: "2025-01-26" },
+                        { property: "789 Sunset Blvd", client: "Jennifer Kim", amount: "$725,000", type: "Direct", date: "2025-01-25" },
+                        { property: "321 Garden Estates", client: "Lisa Davis (Team)", amount: "$950,000", type: "Indirect", date: "2025-01-24" }
                       ].map((sale, index) => (
                         <div key={index} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start">
@@ -615,7 +615,7 @@ const RealtorPortal = () => {
                     <div className="flex justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">Direct Referral Commission</p>
-                        <p className="text-sm text-muted-foreground">January 2024</p>
+                        <p className="text-sm text-muted-foreground">January 2025</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-success">+$7,500</p>
@@ -628,7 +628,7 @@ const RealtorPortal = () => {
                     <div className="flex justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">Level 2 Bonus</p>
-                        <p className="text-sm text-muted-foreground">January 2024</p>
+                        <p className="text-sm text-muted-foreground">January 2025</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-success">+$3,920</p>

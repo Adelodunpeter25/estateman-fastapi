@@ -315,10 +315,10 @@ const SalesForce = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {[
-                    { agent: "Sarah Wilson", reward: "Extra PTO Day", date: "Jan 20, 2024", points: 2000 },
-                    { agent: "Mike Chen", reward: "Prime Parking", date: "Jan 18, 2024", points: 1500 },
-                    { agent: "Emily Rodriguez", reward: "Team Lead Mentorship", date: "Jan 15, 2024", points: 3000 },
-                    { agent: "James Thompson", reward: "Conference Ticket", date: "Jan 12, 2024", points: 7500 }
+                    { agent: "Sarah Wilson", reward: "Extra PTO Day", date: "Jan 20, 2025", points: 2000 },
+                    { agent: "Mike Chen", reward: "Prime Parking", date: "Jan 18, 2025", points: 1500 },
+                    { agent: "Emily Rodriguez", reward: "Team Lead Mentorship", date: "Jan 15, 2025", points: 3000 },
+                    { agent: "James Thompson", reward: "Conference Ticket", date: "Jan 12, 2025", points: 7500 }
                   ].map((redemption, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <div>

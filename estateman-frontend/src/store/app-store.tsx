@@ -110,10 +110,10 @@ const initialPayments: PaymentPlan[] = [
     amount: 450000,
     paidAmount: 170000,
     installments: [
-      { amount: 170000, dueDate: '2024-01-15', status: 'paid', paidDate: '2024-01-10' },
-      { amount: 70000, dueDate: '2024-04-15', status: 'upcoming', paidDate: null },
-      { amount: 70000, dueDate: '2024-07-15', status: 'upcoming', paidDate: null },
-      { amount: 70000, dueDate: '2024-10-15', status: 'upcoming', paidDate: null },
+      { amount: 170000, dueDate: '2025-01-15', status: 'paid', paidDate: '2025-01-10' },
+      { amount: 70000, dueDate: '2025-04-15', status: 'upcoming', paidDate: null },
+      { amount: 70000, dueDate: '2025-07-15', status: 'upcoming', paidDate: null },
+      { amount: 70000, dueDate: '2025-10-15', status: 'upcoming', paidDate: null },
       { amount: 70000, dueDate: '2025-01-15', status: 'upcoming', paidDate: null }
     ],
     realtorCommission: 22500,
@@ -131,10 +131,10 @@ const initialPayments: PaymentPlan[] = [
     paidAmount: 320000,
     installments: [
       { amount: 64000, dueDate: '2023-11-01', status: 'paid', paidDate: '2023-10-28' },
-      { amount: 64000, dueDate: '2024-02-01', status: 'paid', paidDate: '2024-01-29' },
-      { amount: 64000, dueDate: '2024-05-01', status: 'paid', paidDate: '2024-04-28' },
-      { amount: 64000, dueDate: '2024-08-01', status: 'paid', paidDate: '2024-07-30' },
-      { amount: 64000, dueDate: '2024-11-01', status: 'paid', paidDate: '2024-10-29' }
+      { amount: 64000, dueDate: '2025-02-01', status: 'paid', paidDate: '2025-01-29' },
+      { amount: 64000, dueDate: '2025-05-01', status: 'paid', paidDate: '2025-04-28' },
+      { amount: 64000, dueDate: '2025-08-01', status: 'paid', paidDate: '2025-07-30' },
+      { amount: 64000, dueDate: '2025-11-01', status: 'paid', paidDate: '2025-10-29' }
     ],
     realtorCommission: 16000,
     commissionPaid: 16000,
@@ -150,8 +150,8 @@ const initialPayments: PaymentPlan[] = [
     amount: 580000,
     paidAmount: 240000,
     installments: [
-      { amount: 120000, dueDate: '2024-01-01', status: 'paid', paidDate: '2023-12-28' },
-      { amount: 85000, dueDate: '2024-07-01', status: 'overdue', paidDate: null },
+      { amount: 120000, dueDate: '2025-01-01', status: 'paid', paidDate: '2023-12-28' },
+      { amount: 85000, dueDate: '2025-07-01', status: 'overdue', paidDate: null },
       { amount: 85000, dueDate: '2025-01-01', status: 'upcoming', paidDate: null },
       { amount: 85000, dueDate: '2025-07-01', status: 'upcoming', paidDate: null },
       { amount: 85000, dueDate: '2026-01-01', status: 'upcoming', paidDate: null }
