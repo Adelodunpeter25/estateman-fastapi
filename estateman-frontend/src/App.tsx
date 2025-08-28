@@ -4,6 +4,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { SessionManager } from "@/components/auth/SessionManager";
+import { AppStoreProvider } from "@/store/app-store";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import SaasManagement from "./pages/SaasManagement";
@@ -38,44 +42,49 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<Index />} />
-          <Route path="/saas-management" element={<SaasManagement />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/realtors" element={<Realtors />} />
-          <Route path="/realtors/:id" element={<RealtorDetail />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/clients/:id" element={<ClientDetail />} />
-          <Route path="/properties" element={<Properties />} />
-          <Route path="/sales-force" element={<SalesForce />} />
-          <Route path="/commissions" element={<Commissions />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/referrals" element={<Referrals />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/marketing" element={<Marketing />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/accounting" element={<Accounting />} />
-          <Route path="/loyalty" element={<Loyalty />} />
-          <Route path="/newsletters" element={<Newsletters />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/client-portal" element={<ClientPortal />} />
-          <Route path="/realtor-portal" element={<RealtorPortal />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <SessionManager />
+      <AppStoreProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/saas-management" element={<ProtectedRoute><SaasManagement /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/realtors" element={<ProtectedRoute><Realtors /></ProtectedRoute>} />
+              <Route path="/realtors/:id" element={<ProtectedRoute><RealtorDetail /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+              <Route path="/properties" element={<ProtectedRoute><Properties /></ProtectedRoute>} />
+              <Route path="/sales-force" element={<ProtectedRoute><SalesForce /></ProtectedRoute>} />
+              <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
+              <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+              <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+              <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/accounting" element={<ProtectedRoute><Accounting /></ProtectedRoute>} />
+              <Route path="/loyalty" element={<ProtectedRoute><Loyalty /></ProtectedRoute>} />
+              <Route path="/newsletters" element={<ProtectedRoute><Newsletters /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/client-portal" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
+              <Route path="/realtor-portal" element={<ProtectedRoute><RealtorPortal /></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AppStoreProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

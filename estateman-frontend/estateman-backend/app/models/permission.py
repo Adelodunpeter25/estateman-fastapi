@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..core.database import Base
 
+
+
 # Association table for role-permission many-to-many relationship
 role_permission = Table(
     'role_permissions',
@@ -37,6 +39,6 @@ class Role(Base):
     
     # Relationships
     permissions = relationship("Permission", secondary=role_permission, back_populates="roles")
-    users = relationship("User", back_populates="role_obj")
+    # users = relationship("User", back_populates="role_obj")  # Commented to avoid circular import
     parent_role = relationship("Role", remote_side=[id], back_populates="child_roles")
     child_roles = relationship("Role", back_populates="parent_role")

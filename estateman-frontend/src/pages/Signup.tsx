@@ -1,9 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Building2, Eye, EyeOff, Mail, Lock, User, Phone, Building, ArrowRight, ArrowLeft } from "lucide-react"
@@ -23,18 +25,66 @@ const Signup = () => {
     confirmPassword: ""
   })
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const { register, isAuthenticated } = useAuth()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Frontend only - simulate signup
-    console.log("Signup attempt:", formData)
-    // Navigate to dashboard
-    navigate("/dashboard")
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password mismatch",
+        description: "Passwords do not match",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setLoading(true)
+    
+    try {
+      await register({
+        email: formData.email,
+        username: formData.email, // Use email as username
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role
+      })
+      
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      })
+      
+      navigate('/login')
+    } catch (error: any) {
+      const errorMessage = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : "Failed to create account"
+      
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -139,11 +189,10 @@ const Signup = () => {
                     <Input
                       id="company"
                       type="text"
-                      placeholder="Your Company"
+                      placeholder="Your Company (Optional)"
                       value={formData.company}
                       onChange={(e) => handleInputChange("company", e.target.value)}
                       className="pl-10"
-                      required
                     />
                   </div>
                 </div>
@@ -157,11 +206,8 @@ const Signup = () => {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="agent">Real Estate Agent</SelectItem>
-                    <SelectItem value="broker">Broker</SelectItem>
-                    <SelectItem value="manager">Sales Manager</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
-                    <SelectItem value="owner">Business Owner</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
+                    <SelectItem value="realtor">Realtor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -234,9 +280,9 @@ const Signup = () => {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={!agreeToTerms}>
-                Create Account
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button type="submit" className="w-full" size="lg" disabled={!agreeToTerms || loading}>
+                {loading ? "Creating Account..." : "Create Account"}
+                {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </form>
 

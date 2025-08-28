@@ -15,7 +15,7 @@ class AuthService:
     
     def authenticate_user(self, login_data: LoginRequest) -> User:
         user = self.db.query(User).filter(
-            (User.username == login_data.username) | (User.email == login_data.username)
+            (User.username == login_data.email) | (User.email == login_data.email)
         ).first()
         
         # Always verify password to prevent timing attacks
@@ -29,7 +29,7 @@ class AuthService:
         if not user or not password_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password"
+                detail="Incorrect email or password"
             )
         
         if not user.is_active:

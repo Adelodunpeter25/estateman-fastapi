@@ -5,9 +5,11 @@ from ..core.database import Base
 import enum
 
 class UserRole(str, enum.Enum):
+    SUPERADMIN = "superadmin"
     ADMIN = "admin"
     MANAGER = "manager"
-    AGENT = "agent"
+    ACCOUNTANT = "accountant"
+    REALTOR = "realtor"
     CLIENT = "client"
 
 class User(Base):
@@ -33,5 +35,4 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    role_obj = relationship("Role", back_populates="users")
     # properties = relationship("Property", back_populates="agent")

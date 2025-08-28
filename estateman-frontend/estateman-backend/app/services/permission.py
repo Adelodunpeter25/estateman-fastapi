@@ -10,18 +10,30 @@ class PermissionService:
     
     def check_permission(self, user: User, resource: str, action: str) -> bool:
         """Check if user has permission for specific resource and action (with inheritance)"""
+        if not user.role_id:
+            return False
+        
+        role = self.db.query(Role).filter(Role.id == user.role_id).first()
+        if not role:
+            return False
+            
         from ..services.rbac import RBACService
         rbac_service = RBACService(self.db)
-        return rbac_service.check_permission_with_inheritance(user, resource, action)
+        return rbac_service.check_permission_with_inheritance_by_role(role, resource, action)
     
     def get_user_permissions(self, user: User) -> List[str]:
         """Get all permissions for a user (including inherited)"""
-        if not user.role_obj:
+        if not user.role_id:
+            return []
+        
+        # Get role directly from database
+        role = self.db.query(Role).filter(Role.id == user.role_id).first()
+        if not role:
             return []
         
         from ..services.rbac import RBACService
         rbac_service = RBACService(self.db)
-        all_permissions = rbac_service.get_all_permissions_for_role(user.role_obj)
+        all_permissions = rbac_service.get_all_permissions_for_role(role)
         
         permissions = []
         for permission in all_permissions:

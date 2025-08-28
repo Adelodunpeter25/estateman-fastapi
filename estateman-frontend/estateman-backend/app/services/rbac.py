@@ -25,10 +25,24 @@ class RBACService:
     
     def check_permission_with_inheritance(self, user: User, resource: str, action: str) -> bool:
         """Check permission including inheritance"""
-        if not user.role_obj:
+        if not user.role_id:
             return False
         
-        all_permissions = self.get_all_permissions_for_role(user.role_obj)
+        role = self.db.query(Role).filter(Role.id == user.role_id).first()
+        if not role:
+            return False
+            
+        all_permissions = self.get_all_permissions_for_role(role)
+        
+        for permission in all_permissions:
+            if permission.resource == resource and permission.action == action:
+                return True
+        
+        return False
+    
+    def check_permission_with_inheritance_by_role(self, role: Role, resource: str, action: str) -> bool:
+        """Check permission including inheritance by role"""
+        all_permissions = self.get_all_permissions_for_role(role)
         
         for permission in all_permissions:
             if permission.resource == resource and permission.action == action:

@@ -3,18 +3,41 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import { authService } from "@/services/auth"
 import { Building2, Mail, ArrowLeft, CheckCircle } from "lucide-react"
 import { Link } from "react-router-dom"
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Frontend only - simulate password reset
-    console.log("Password reset request for:", email)
-    setIsSubmitted(true)
+    setLoading(true)
+    
+    try {
+      await authService.requestPasswordReset({ email })
+      setIsSubmitted(true)
+      toast({
+        title: "Reset link sent",
+        description: "Check your email for password reset instructions.",
+      })
+    } catch (error: any) {
+      const errorMessage = typeof error.response?.data?.detail === 'string' 
+        ? error.response.data.detail 
+        : "Failed to send reset link"
+      
+      toast({
+        title: "Request failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -59,7 +82,10 @@ const ForgotPassword = () => {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => setIsSubmitted(false)}
+                    onClick={() => {
+                      setIsSubmitted(false)
+                      setEmail("")
+                    }}
                   >
                     Try again
                   </Button>
@@ -83,8 +109,8 @@ const ForgotPassword = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  Send reset link
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? "Sending..." : "Send reset link"}
                 </Button>
               </form>
             )}

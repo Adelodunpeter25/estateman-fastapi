@@ -179,11 +179,15 @@ async def get_user_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.role_obj:
+    if not current_user.role_id:
+        return {"permissions": []}
+    
+    role = db.query(Role).filter(Role.id == current_user.role_id).first()
+    if not role:
         return {"permissions": []}
     
     rbac_service = RBACService(db)
-    all_permissions = rbac_service.get_all_permissions_for_role(current_user.role_obj)
+    all_permissions = rbac_service.get_all_permissions_for_role(role)
     
     permissions = [
         {
@@ -191,9 +195,70 @@ async def get_user_permissions(
             "name": p.name,
             "resource": p.resource,
             "action": p.action,
-            "inherited": p not in current_user.role_obj.permissions
+            "inherited": p not in role.permissions
         }
         for p in all_permissions
     ]
     
     return {"permissions": permissions}
+
+# Get User Permission Names Only (for frontend)
+@router.get("/user-permission-names")
+async def get_user_permission_names(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.role_id:
+        return {"permissions": []}
+    
+    role = db.query(Role).filter(Role.id == current_user.role_id).first()
+    if not role:
+        return {"permissions": []}
+    
+    rbac_service = RBACService(db)
+    all_permissions = rbac_service.get_all_permissions_for_role(role)
+    
+    permission_names = [p.name for p in all_permissions]
+    
+    return {"permissions": permission_names}
+
+# Get Navigation Configuration
+@router.get("/navigation-config")
+async def get_navigation_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from ....models.navigation import NavigationRoute
+    
+    # Get all active navigation routes from database
+    navigation_routes = db.query(NavigationRoute).filter(
+        NavigationRoute.is_active == True
+    ).order_by(NavigationRoute.category, NavigationRoute.order_index).all()
+    
+    # Get user permissions
+    if not current_user.role_id:
+        return {"navigation": []}
+    
+    role = db.query(Role).filter(Role.id == current_user.role_id).first()
+    if not role:
+        return {"navigation": []}
+    
+    rbac_service = RBACService(db)
+    all_permissions = rbac_service.get_all_permissions_for_role(role)
+    user_permissions = [p.name for p in all_permissions]
+    
+    # Build accessible navigation with categories
+    navigation_by_category = {}
+    for nav_route in navigation_routes:
+        if nav_route.category not in navigation_by_category:
+            navigation_by_category[nav_route.category] = []
+        
+        navigation_by_category[nav_route.category].append({
+            "route": nav_route.route,
+            "title": nav_route.title,
+            "required_permission": nav_route.required_permission,
+            "accessible": nav_route.required_permission in user_permissions,
+            "order_index": nav_route.order_index
+        })
+    
+    return {"navigation": navigation_by_category}
