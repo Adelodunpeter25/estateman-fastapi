@@ -3,6 +3,8 @@ import { StatsCard } from "@/components/dashboard/StatsCard"
 import { RecentActivities } from "@/components/dashboard/RecentActivities"
 import { TopPerformers } from "@/components/dashboard/TopPerformers"
 import { SalesChart } from "@/components/dashboard/SalesChart"
+import { dashboardService, type DashboardOverview, type RecentActivity, type TopPerformer, type ChartData } from "@/services/dashboard"
+import { useState, useEffect } from "react"
 import { 
   Users, 
   Building2, 
@@ -11,10 +13,51 @@ import {
   Target, 
   UserCheck,
   Calendar,
-  Award
+  Award,
+  Loader2
 } from "lucide-react"
 
 const Index = () => {
+  const [overview, setOverview] = useState<DashboardOverview | null>(null)
+  const [activities, setActivities] = useState<RecentActivity[]>([])
+  const [performers, setPerformers] = useState<TopPerformer[]>([])
+  const [chartData, setChartData] = useState<ChartData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [overviewData, activitiesData, performersData, chartDataRes] = await Promise.all([
+          dashboardService.getOverview(),
+          dashboardService.getRecentActivities(),
+          dashboardService.getTopPerformers(),
+          dashboardService.getChartData()
+        ])
+        
+        setOverview(overviewData)
+        setActivities(activitiesData)
+        setPerformers(performersData)
+        setChartData(chartDataRes)
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -26,119 +69,114 @@ const Index = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatsCard
-            title="Total Sales"
-            value="$42.8M"
-            change={{ value: "+12.5%", type: "increase" }}
-            icon={DollarSign}
-            description="Year to date"
-          />
+          {overview?.total_sales && (
+            <StatsCard
+              title="Total Sales"
+              value={`$${overview.total_sales.value}`}
+              change={{ value: `${overview.total_sales.change > 0 ? '+' : ''}${overview.total_sales.change}%`, type: overview.total_sales.type }}
+              icon={DollarSign}
+              description="Year to date"
+            />
+          )}
           <StatsCard
             title="Active Realtors"
-            value="156"
-            change={{ value: "+8", type: "increase" }}
+            value={overview?.active_realtors.value || "0"}
+            change={{ value: `${overview?.active_realtors.change > 0 ? '+' : ''}${overview?.active_realtors.change || 0}`, type: overview?.active_realtors.type || "neutral" }}
             icon={UserCheck}
             description="Currently active"
           />
-          <StatsCard
-            title="Properties Listed"
-            value="1,247"
-            change={{ value: "+23", type: "increase" }}
-            icon={Building2}
-            description="Available listings"
-          />
-          <StatsCard
-            title="Conversion Rate"
-            value="34.2%"
-            change={{ value: "+2.1%", type: "increase" }}
-            icon={Target}
-            description="Leads to sales"
-          />
+          {overview?.properties_listed && (
+            <StatsCard
+              title="Properties Listed"
+              value={overview.properties_listed.value}
+              change={{ value: `${overview.properties_listed.change > 0 ? '+' : ''}${overview.properties_listed.change}`, type: overview.properties_listed.type }}
+              icon={Building2}
+              description="Available listings"
+            />
+          )}
+          {overview?.conversion_rate && (
+            <StatsCard
+              title="Conversion Rate"
+              value={overview.conversion_rate.value}
+              change={{ value: `${overview.conversion_rate.change > 0 ? '+' : ''}${overview.conversion_rate.change}%`, type: overview.conversion_rate.type }}
+              icon={Target}
+              description="Leads to sales"
+            />
+          )}
         </div>
 
         {/* Charts and Analytics */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
-          <SalesChart />
-          <TopPerformers />
+          <SalesChart data={chartData} />
+          <TopPerformers performers={performers} />
         </div>
 
         {/* Secondary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatsCard
-            title="Monthly Leads"
-            value="2,847"
-            change={{ value: "+18.3%", type: "increase" }}
-            icon={Target}
-            description="New leads this month"
-          />
+          {overview?.monthly_leads && (
+            <StatsCard
+              title="Monthly Leads"
+              value={overview.monthly_leads.value}
+              change={{ value: `${overview.monthly_leads.change > 0 ? '+' : ''}${overview.monthly_leads.change}%`, type: overview.monthly_leads.type }}
+              icon={Target}
+              description="New leads this month"
+            />
+          )}
           <StatsCard
             title="Active Clients"
-            value="892"
-            change={{ value: "+156", type: "increase" }}
+            value={overview?.active_clients.value || "0"}
+            change={{ value: `${overview?.active_clients.change > 0 ? '+' : ''}${overview?.active_clients.change || 0}`, type: overview?.active_clients.type || "neutral" }}
             icon={Users}
             description="Engaged clients"
           />
-          <StatsCard
-            title="Avg. Deal Size"
-            value="$485K"
-            change={{ value: "+7.2%", type: "increase" }}
-            icon={TrendingUp}
-            description="Per transaction"
-          />
-          <StatsCard
-            title="Events Scheduled"
-            value="64"
-            change={{ value: "+12", type: "increase" }}
-            icon={Calendar}
-            description="This month"
-          />
+          {overview?.avg_deal_size && (
+            <StatsCard
+              title="Avg. Deal Size"
+              value={`$${overview.avg_deal_size.value}`}
+              change={{ value: `${overview.avg_deal_size.change > 0 ? '+' : ''}${overview.avg_deal_size.change}%`, type: overview.avg_deal_size.type }}
+              icon={TrendingUp}
+              description="Per transaction"
+            />
+          )}
+          {overview?.events_scheduled && (
+            <StatsCard
+              title="Events Scheduled"
+              value={overview.events_scheduled.value}
+              change={{ value: `${overview.events_scheduled.change > 0 ? '+' : ''}${overview.events_scheduled.change}`, type: overview.events_scheduled.type }}
+              icon={Calendar}
+              description="This month"
+            />
+          )}
         </div>
 
         {/* Recent Activities */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-          <RecentActivities />
+          <RecentActivities activities={activities} />
           
-          {/* Quick Actions Card */}
-          <div className="space-y-4 md:space-y-6">
+          {/* Performance Summary */}
+          {performers.length > 0 && (
             <div className="bg-gradient-to-br from-primary to-primary/80 rounded-lg p-4 md:p-6 text-primary-foreground">
               <h3 className="text-lg md:text-xl font-semibold mb-2">Performance Highlights</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm md:text-base">Top Performer</span>
-                  <span className="font-semibold text-sm md:text-base">Sarah Johnson</span>
+                  <span className="font-semibold text-sm md:text-base">{performers[0]?.name || 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm md:text-base">Best Deal This Month</span>
-                  <span className="font-semibold text-sm md:text-base">$850K</span>
+                  <span className="text-sm md:text-base">Total Revenue</span>
+                  <span className="font-semibold text-sm md:text-base">
+                    ${(performers.reduce((sum, p) => sum + p.revenue, 0) / 1000000).toFixed(1)}M
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm md:text-base">Team Target Achievement</span>
-                  <span className="font-semibold text-sm md:text-base">104.7%</span>
+                  <span className="text-sm md:text-base">Total Sales</span>
+                  <span className="font-semibold text-sm md:text-base">
+                    {performers.reduce((sum, p) => sum + p.sales, 0)}
+                  </span>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-gradient-to-br from-gold to-gold/80 rounded-lg p-4 md:p-6 text-gold-foreground">
-              <h3 className="text-lg md:text-xl font-semibold mb-2 flex items-center gap-2">
-                <Award className="h-4 w-4 md:h-5 md:w-5" />
-                Loyalty Program
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm md:text-base">Active Members</span>
-                  <span className="font-semibold text-sm md:text-base">2,847</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm md:text-base">Points Distributed</span>
-                  <span className="font-semibold text-sm md:text-base">15.2M</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm md:text-base">Rewards Claimed</span>
-                  <span className="font-semibold text-sm md:text-base">1,203</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

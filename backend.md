@@ -352,7 +352,6 @@ Include CRM dashboard with lead pipeline visualization.
 - [ ] Lead scoring implementation
 - [ ] Interaction tracking system
 - [ ] Lead assignment automation
-- [ ] Pipeline visualization dashboard
 - [ ] Communication history tracking
 
 ### Task 5.2: Loyalty Points & Rewards System

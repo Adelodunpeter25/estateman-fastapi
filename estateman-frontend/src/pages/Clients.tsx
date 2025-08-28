@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,124 +7,118 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { StatsCard } from "@/components/dashboard/StatsCard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { clientsService, Client, ClientAnalytics, ClientCreateData } from "@/services/clients"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, Star, TrendingUp, DollarSign, Search, Plus, Edit, Eye, Phone, Mail, MapPin, Calendar, Award, Grid3X3, List } from "lucide-react"
+import { Users, Star, TrendingUp, DollarSign, Search, Plus, Edit, Eye, Phone, Mail, MapPin, Calendar, Award, Grid3X3, List, Check, ChevronsUpDown } from "lucide-react"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { realtorsService } from "@/services/realtors"
 
-// Sample client data
-const clients = [
-  {
-    id: "C001",
-    name: "David Thompson",
-    email: "david.thompson@email.com",
-    phone: "+1 (555) 987-6543",
-    status: "Active",
-    leadScore: 95,
-    loyaltyPoints: 2850,
-    joinDate: "2023-08-15",
-    realtorId: "R001",
-    realtorName: "Sarah Johnson",
-    realtorReferralId: "SJ2025001",
-    totalTransactions: 3,
-    totalValue: 1250000,
-    currentInterest: "Luxury Condos",
-    preferredLocation: "Downtown",
-    budget: { min: 800000, max: 1200000 },
-    stage: "Viewing Properties",
-    lastContact: "2025-01-28",
-    avatar: "/placeholder.svg",
-    notes: "High-value client interested in luxury properties. Prefers modern architecture."
-  },
-  {
-    id: "C002",
-    name: "Jennifer Walsh",
-    email: "jennifer.walsh@email.com",
-    phone: "+1 (555) 876-5432",
-    status: "Active",
-    leadScore: 78,
-    loyaltyPoints: 1650,
-    joinDate: "2023-11-20",
-    realtorId: "R002",
-    realtorName: "Michael Chen",
-    realtorReferralId: "MC2025002",
-    totalTransactions: 1,
-    totalValue: 485000,
-    currentInterest: "Family Homes",
-    preferredLocation: "Suburbs",
-    budget: { min: 400000, max: 600000 },
-    stage: "Under Contract",
-    lastContact: "2025-01-29",
-    avatar: "/placeholder.svg",
-    notes: "First-time homebuyer looking for family-friendly neighborhood."
-  },
-  {
-    id: "C003",
-    name: "Robert Kim",
-    email: "robert.kim@email.com",
-    phone: "+1 (555) 765-4321",
-    status: "Active",
-    leadScore: 87,
-    loyaltyPoints: 3200,
-    joinDate: "2022-12-05",
-    realtorId: "R003",
-    realtorName: "Emily Rodriguez",
-    realtorReferralId: "ER2025003",
-    totalTransactions: 4,
-    totalValue: 2100000,
-    currentInterest: "Investment Properties",
-    preferredLocation: "Business District",
-    budget: { min: 300000, max: 800000 },
-    stage: "Negotiating",
-    lastContact: "2025-01-30",
-    avatar: "/placeholder.svg",
-    notes: "Experienced investor with multiple properties. Focuses on ROI and rental potential."
-  },
-  {
-    id: "C004",
-    name: "Lisa Anderson",
-    email: "lisa.anderson@email.com",
-    phone: "+1 (555) 654-3210",
-    status: "Lead",
-    leadScore: 65,
-    loyaltyPoints: 0,
-    joinDate: "2025-01-15",
-    realtorId: "R001",
-    realtorName: "Sarah Johnson",
-    realtorReferralId: "SJ2025001",
-    totalTransactions: 0,
-    totalValue: 0,
-    currentInterest: "Starter Homes",
-    preferredLocation: "Midtown",
-    budget: { min: 250000, max: 400000 },
-    stage: "Initial Consultation",
-    lastContact: "2025-01-30",
-    avatar: "/placeholder.svg",
-    notes: "New lead interested in purchasing first home. Needs financing guidance."
-  }
-]
+
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedClient, setSelectedClient] = useState(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [filterStatus, setFilterStatus] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.realtorName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === "all" || client.status.toLowerCase() === filterStatus
-    return matchesSearch && matchesStatus
+  const [clients, setClients] = useState<Client[]>([])
+  const [analytics, setAnalytics] = useState<ClientAnalytics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [realtors, setRealtors] = useState<Array<{id: number, name: string, realtor_id: string}>>([])
+  const [realtorOpen, setRealtorOpen] = useState(false)
+  const [formData, setFormData] = useState<ClientCreateData>({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    budget_min: 0,
+    budget_max: 0,
+    preferred_location: '',
+    property_interests: [],
+    lead_source: '',
+    notes: '',
+    assigned_agent_id: undefined
   })
 
-  const totalClients = clients.length
-  const activeClients = clients.filter(c => c.status === "Active").length
-  const totalTransactionValue = clients.reduce((sum, c) => sum + c.totalValue, 0)
-  const averageLeadScore = clients.reduce((sum, c) => sum + c.leadScore, 0) / clients.length
+  useEffect(() => {
+    loadData()
+    loadRealtors()
+  }, [])
+
+  const loadRealtors = async () => {
+    try {
+      const realtorsData = await realtorsService.getRealtorsDropdown()
+      setRealtors(realtorsData)
+    } catch (error: any) {
+      console.error('Error loading realtors:', error)
+      if (error?.response?.status === 404) {
+        setRealtors([])
+      }
+    }
+  }
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [clientsData, analyticsData] = await Promise.all([
+        clientsService.getClients().catch((err: any) => err?.response?.status === 404 ? [] : Promise.reject(err)),
+        clientsService.getClientAnalytics()
+      ])
+      setClients(clientsData)
+      setAnalytics(analyticsData)
+    } catch (error: any) {
+      console.error('Error loading client data:', error)
+      if (error?.response?.status === 404) {
+        setClients([])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateClient = async () => {
+    try {
+      setCreating(true)
+      const newClient = await clientsService.createClient(formData)
+      setClients(prev => [...prev, newClient])
+      setShowAddDialog(false)
+      setFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        budget_min: 0,
+        budget_max: 0,
+        preferred_location: '',
+        property_interests: [],
+        lead_source: '',
+        notes: '',
+        assigned_agent_id: undefined
+      })
+      loadData()
+    } catch (error) {
+      console.error('Error creating client:', error)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleFormChange = (field: keyof ClientCreateData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const filteredClients = clients.filter(client => {
+    const fullName = `${client.first_name} ${client.last_name}`
+    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = filterStatus === "all" || client.status === filterStatus
+    return matchesSearch && matchesStatus
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -185,54 +179,147 @@ const Clients = () => {
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Enter full name" />
+                  <Label htmlFor="first_name">First Name</Label>
+                  <Input 
+                    id="first_name" 
+                    placeholder="Enter first name" 
+                    value={formData.first_name}
+                    onChange={(e) => handleFormChange('first_name', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input 
+                    id="last_name" 
+                    placeholder="Enter last name" 
+                    value={formData.last_name}
+                    onChange={(e) => handleFormChange('last_name', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Enter email address" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter email address" 
+                    value={formData.email}
+                    onChange={(e) => handleFormChange('email', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="Enter phone number" />
+                  <Input 
+                    id="phone" 
+                    placeholder="Enter phone number" 
+                    value={formData.phone}
+                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="realtor">Assign Realtor</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select realtor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SJ2025001">Sarah Johnson (SJ2025001)</SelectItem>
-                      <SelectItem value="MC2025002">Michael Chen (MC2025002)</SelectItem>
-                      <SelectItem value="ER2025003">Emily Rodriguez (ER2025003)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="assigned_agent_id">Assign Realtor</Label>
+                  <Popover open={realtorOpen} onOpenChange={setRealtorOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={realtorOpen}
+                        className="w-full justify-between"
+                      >
+                        {formData.assigned_agent_id
+                          ? realtors.find((realtor) => realtor.id === formData.assigned_agent_id)?.name
+                          : "Select realtor..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search realtors..." />
+                        <CommandEmpty>No realtor found.</CommandEmpty>
+                        <CommandGroup>
+                          {realtors.map((realtor) => (
+                            <CommandItem
+                              key={realtor.id}
+                              value={realtor.name}
+                              onSelect={() => {
+                                handleFormChange('assigned_agent_id', realtor.id)
+                                setRealtorOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  formData.assigned_agent_id === realtor.id ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {realtor.name} ({realtor.realtor_id})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="interest">Current Interest</Label>
-                  <Input id="interest" placeholder="e.g., Luxury Condos, Family Homes" />
+                  <Label htmlFor="lead_source">Lead Source</Label>
+                  <Input 
+                    id="lead_source" 
+                    placeholder="e.g., Website, Referral, Social Media" 
+                    value={formData.lead_source}
+                    onChange={(e) => handleFormChange('lead_source', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Preferred Location</Label>
-                  <Input id="location" placeholder="Enter preferred location" />
+                  <Label htmlFor="preferred_location">Preferred Location</Label>
+                  <Input 
+                    id="preferred_location" 
+                    placeholder="Enter preferred location" 
+                    value={formData.preferred_location}
+                    onChange={(e) => handleFormChange('preferred_location', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="budget-min">Budget Min ($)</Label>
-                  <Input id="budget-min" type="number" placeholder="Minimum budget" />
+                  <Label htmlFor="property_interests">Property Interests</Label>
+                  <Input 
+                    id="property_interests" 
+                    placeholder="e.g., Luxury Condos, Family Homes" 
+                    value={formData.property_interests?.join(', ') || ''}
+                    onChange={(e) => handleFormChange('property_interests', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="budget-max">Budget Max ($)</Label>
-                  <Input id="budget-max" type="number" placeholder="Maximum budget" />
+                  <Label htmlFor="budget_min">Budget Min ($)</Label>
+                  <Input 
+                    id="budget_min" 
+                    type="number" 
+                    placeholder="Minimum budget" 
+                    value={formData.budget_min}
+                    onChange={(e) => handleFormChange('budget_min', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="budget_max">Budget Max ($)</Label>
+                  <Input 
+                    id="budget_max" 
+                    type="number" 
+                    placeholder="Maximum budget" 
+                    value={formData.budget_max}
+                    onChange={(e) => handleFormChange('budget_max', parseFloat(e.target.value) || 0)}
+                  />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" placeholder="Enter client notes and preferences" />
+                  <Textarea 
+                    id="notes" 
+                    placeholder="Enter client notes and preferences" 
+                    value={formData.notes}
+                    onChange={(e) => handleFormChange('notes', e.target.value)}
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button>Create Client</Button>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={creating}>Cancel</Button>
+                <Button onClick={handleCreateClient} disabled={creating}>
+                  {creating ? 'Creating...' : 'Create Client'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -242,28 +329,28 @@ const Clients = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title="Total Clients"
-            value={totalClients}
+            value={analytics?.total_clients || 0}
             icon={Users}
             change={{ value: "+8%", type: "increase" }}
             description="Registered clients"
           />
           <StatsCard
             title="Active Clients"
-            value={activeClients}
+            value={analytics?.active_clients || 0}
             icon={TrendingUp}
             change={{ value: "+12%", type: "increase" }}
             description="Currently engaged"
           />
           <StatsCard
-            title="Transaction Value"
-            value={`$${(totalTransactionValue / 1000000).toFixed(1)}M`}
+            title="Conversion Rate"
+            value={`${analytics?.conversion_rate || 0}%`}
             icon={DollarSign}
             change={{ value: "+25%", type: "increase" }}
-            description="Total value handled"
+            description="Lead to client conversion"
           />
           <StatsCard
             title="Avg Lead Score"
-            value={averageLeadScore.toFixed(0)}
+            value={analytics?.average_lead_score ? analytics.average_lead_score.toFixed(0) : "0"}
             icon={Star}
             change={{ value: "+5", type: "increase" }}
             description="Client engagement score"
@@ -330,20 +417,20 @@ const Clients = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Avatar>
-                          <AvatarImage src={client.avatar} />
-                          <AvatarFallback>{client.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          <AvatarImage src="/placeholder.svg" />
+                          <AvatarFallback>{client.first_name?.[0] || '?'}{client.last_name?.[0] || '?'}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle className="text-lg">{client.name}</CardTitle>
-                          <CardDescription>ID: {client.id}</CardDescription>
+                          <CardTitle className="text-lg">{client.first_name} {client.last_name}</CardTitle>
+                          <CardDescription>ID: {client.client_id}</CardDescription>
                         </div>
                       </div>
                       <div className="flex flex-col items-end space-y-1">
                         <Badge className={getStatusColor(client.status)}>
                           {client.status}
                         </Badge>
-                        <div className={`text-sm font-medium ${getLeadScoreColor(client.leadScore)}`}>
-                          Score: {client.leadScore}
+                        <div className={`text-sm font-medium ${getLeadScoreColor(client.lead_score)}`}>
+                          Score: {client.lead_score}
                         </div>
                       </div>
                     </div>
@@ -360,44 +447,47 @@ const Clients = () => {
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <MapPin className="mr-2 h-4 w-4" />
-                        {client.preferredLocation}
+                        {client.preferred_location || 'Not specified'}
                       </div>
                     </div>
 
                     <div className="p-3 bg-muted/50 rounded-lg">
-                      <div className="text-sm font-medium mb-1">Upline</div>
-                      <div className="text-sm text-muted-foreground">{client.realtorName}</div>
-                      <div className="text-xs text-muted-foreground">ID: {client.realtorReferralId}</div>
+                      <div className="text-sm font-medium mb-1">Agent</div>
+                      <div className="text-sm text-muted-foreground">Agent ID: {client.assigned_agent_id || 'Unassigned'}</div>
+                      <div className="text-xs text-muted-foreground">Source: {client.lead_source || 'Unknown'}</div>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Current Interest:</span>
-                        <span className="font-medium">{client.currentInterest}</span>
+                        <span>Interests:</span>
+                        <span className="font-medium">{client.property_interests?.join(', ') || 'Not specified'}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Budget Range:</span>
                         <span className="font-medium">
-                          ${(client.budget.min / 1000)}K - ${(client.budget.max / 1000)}K
+                          {client.budget_min && client.budget_max 
+                            ? `$${(client.budget_min / 1000)}K - $${(client.budget_max / 1000)}K`
+                            : 'Not specified'
+                          }
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Stage:</span>
-                        <Badge variant="outline" className={getStageColor(client.stage)}>
-                          {client.stage}
+                        <span>Tier:</span>
+                        <Badge variant="outline" className={getStageColor(client.loyalty_tier)}>
+                          {client.loyalty_tier}
                         </Badge>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div className="text-center">
-                        <div className="text-lg font-bold">{client.totalTransactions}</div>
-                        <div className="text-xs text-muted-foreground">Transactions</div>
+                        <div className="text-lg font-bold">${client.total_spent.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">Total Spent</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-warning">
                           <Award className="inline mr-1 h-4 w-4" />
-                          {client.loyaltyPoints}
+                          {client.loyalty_points}
                         </div>
                         <div className="text-xs text-muted-foreground">Loyalty Points</div>
                       </div>
@@ -444,47 +534,47 @@ const Clients = () => {
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={client.avatar} />
-                              <AvatarFallback>{client.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarImage src="/placeholder.svg" />
+                              <AvatarFallback>{client.first_name?.[0] || '?'}{client.last_name?.[0] || '?'}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{client.name}</div>
+                              <div className="font-medium">{client.first_name} {client.last_name}</div>
                               <div className="text-sm text-muted-foreground">{client.email}</div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-sm">{client.realtorName}</div>
-                            <div className="text-xs text-muted-foreground">{client.realtorReferralId}</div>
+                            <div className="font-medium text-sm">Agent ID: {client.assigned_agent_id || 'Unassigned'}</div>
+                            <div className="text-xs text-muted-foreground">Source: {client.lead_source || 'Unknown'}</div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <div className="w-16 bg-muted rounded-full h-2">
                               <div 
-                                className={`h-2 rounded-full ${client.leadScore >= 90 ? 'bg-success' : client.leadScore >= 70 ? 'bg-warning' : 'bg-muted-foreground'}`}
-                                style={{ width: `${client.leadScore}%` }}
+                                className={`h-2 rounded-full ${client.lead_score >= 90 ? 'bg-success' : client.lead_score >= 70 ? 'bg-warning' : 'bg-muted-foreground'}`}
+                                style={{ width: `${client.lead_score}%` }}
                               />
                             </div>
-                            <span className={`text-sm font-medium ${getLeadScoreColor(client.leadScore)}`}>
-                              {client.leadScore}
+                            <span className={`text-sm font-medium ${getLeadScoreColor(client.lead_score)}`}>
+                              {client.lead_score}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>{client.totalTransactions}</TableCell>
+                        <TableCell>{client.total_spent || 0}</TableCell>
                         <TableCell className="font-medium">
-                          ${client.totalValue.toLocaleString()}
+                          ${(client.total_spent || 0).toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getStageColor(client.stage)}>
-                            {client.stage}
+                          <Badge variant="outline" className={getStageColor(client.loyalty_tier)}>
+                            {client.loyalty_tier}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center text-sm text-muted-foreground">
                             <Calendar className="mr-1 h-4 w-4" />
-                            {client.lastContact}
+                            {client.last_contact_date || 'Never'}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -507,19 +597,23 @@ const Clients = () => {
                     <div className="flex justify-between items-center">
                       <span>Total Points Awarded</span>
                       <span className="text-lg font-bold text-warning">
-                        {clients.reduce((sum, c) => sum + c.loyaltyPoints, 0).toLocaleString()}
+                        {clients.reduce((sum, c) => sum + (c.loyalty_points || 0), 0).toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Average Points per Client</span>
                       <span className="text-lg font-bold">
-                        {Math.round(clients.reduce((sum, c) => sum + c.loyaltyPoints, 0) / clients.length)}
+                        {clients.length > 0 ? Math.round(clients.reduce((sum, c) => sum + (c.loyalty_points || 0), 0) / clients.length) : 0}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Top Earner</span>
                       <span className="text-lg font-bold">
-                        {clients.sort((a, b) => b.loyaltyPoints - a.loyaltyPoints)[0]?.name}
+                        {(() => {
+                          const sortedClients = clients.sort((a, b) => (b.loyalty_points || 0) - (a.loyalty_points || 0))
+                          const topClient = sortedClients[0]
+                          return topClient ? `${topClient.first_name} ${topClient.last_name}` : 'None'
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -534,7 +628,7 @@ const Clients = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {clients
-                      .sort((a, b) => b.loyaltyPoints - a.loyaltyPoints)
+                      .sort((a, b) => (b.loyalty_points || 0) - (a.loyalty_points || 0))
                       .slice(0, 5)
                       .map((client, index) => (
                         <div key={client.id} className="flex items-center justify-between">
@@ -543,14 +637,14 @@ const Clients = () => {
                               {index + 1}
                             </div>
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={client.avatar} />
-                              <AvatarFallback>{client.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarImage src="/placeholder.svg" />
+                              <AvatarFallback>{client.first_name?.[0] || '?'}{client.last_name?.[0] || '?'}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{client.name}</span>
+                            <span className="font-medium">{client.first_name} {client.last_name}</span>
                           </div>
                           <div className="flex items-center text-warning">
                             <Award className="mr-1 h-4 w-4" />
-                            {client.loyaltyPoints}
+                            {client.loyalty_points || 0}
                           </div>
                         </div>
                       ))}

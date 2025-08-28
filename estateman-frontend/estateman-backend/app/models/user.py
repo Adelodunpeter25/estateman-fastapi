@@ -35,4 +35,6 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    # properties = relationship("Property", back_populates="agent")
+    properties = relationship("Property", back_populates="agent")
+    assigned_clients = relationship("Client", back_populates="assigned_agent")
+    realtor_profile = relationship("Realtor", back_populates="user", uselist=False)

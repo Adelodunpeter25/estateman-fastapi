@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { clientsService, Lead, LeadPipeline } from "@/services/clients"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -19,92 +21,39 @@ import {
   Search
 } from "lucide-react"
 
-const leads = [
-  {
-    id: "1",
-    name: "Jennifer Martinez",
-    email: "jennifer.m@email.com",
-    phone: "+1 (555) 123-4567",
-    source: "Website",
-    status: "Hot",
-    score: 92,
-    budget: "$800K - $1.2M",
-    location: "Downtown District",
-    interested: "Luxury Condo",
-    assignedTo: "Sarah Johnson",
-    lastContact: "2 hours ago",
-    notes: "Very interested in high-end properties. Ready to move quickly."
-  },
-  {
-    id: "2",
-    name: "Robert Chen",
-    email: "robert.chen@company.com",
-    phone: "+1 (555) 987-6543",
-    source: "Referral",
-    status: "Warm",
-    score: 78,
-    budget: "$500K - $700K",
-    location: "Suburban Hills",
-    interested: "Family Home",
-    assignedTo: "Mike Chen",
-    lastContact: "1 day ago",
-    notes: "Looking for family-friendly neighborhood with good schools."
-  },
-  {
-    id: "3",
-    name: "Emily Rodriguez",
-    email: "emily.r@gmail.com",
-    phone: "+1 (555) 456-7890",
-    source: "Social Media",
-    status: "Cold",
-    score: 45,
-    budget: "$300K - $450K",
-    location: "City Center",
-    interested: "Apartment",
-    assignedTo: "Emily Davis",
-    lastContact: "3 days ago",
-    notes: "First-time buyer, needs guidance through the process."
-  },
-  {
-    id: "4",
-    name: "Michael Thompson",
-    email: "m.thompson@business.com",
-    phone: "+1 (555) 321-0987",
-    source: "Google Ads",
-    status: "Hot",
-    score: 88,
-    budget: "$1M - $2M",
-    location: "Waterfront",
-    interested: "Commercial Space",
-    assignedTo: "James Wilson",
-    lastContact: "4 hours ago",
-    notes: "Expanding business, needs large commercial space near water."
-  },
-  {
-    id: "5",
-    name: "Lisa Wang",
-    email: "lisa.wang@tech.com",
-    phone: "+1 (555) 654-3210",
-    source: "Walk-in",
-    status: "Warm",
-    score: 72,
-    budget: "$600K - $900K",
-    location: "Tech District",
-    interested: "Modern Loft",
-    assignedTo: "Lisa Anderson",
-    lastContact: "6 hours ago",
-    notes: "Tech professional looking for modern amenities and smart home features."
-  }
-]
+
 
 const Leads = () => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Hot":
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [pipeline, setPipeline] = useState<LeadPipeline[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [leadsData, pipelineData] = await Promise.all([
+        clientsService.getLeads(),
+        clientsService.getLeadPipeline()
+      ])
+      setLeads(leadsData)
+      setPipeline(pipelineData)
+    } catch (error) {
+      console.error('Error loading leads data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  const getStatusColor = (temperature: string) => {
+    switch (temperature) {
+      case "hot":
         return "bg-red-100 text-red-800 border-red-200"
-      case "Warm":
+      case "warm":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "Cold":
+      case "cold":
         return "bg-blue-100 text-blue-800 border-blue-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
@@ -140,8 +89,8 @@ const Leads = () => {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2,847</div>
-              <p className="text-xs text-muted-foreground">+18.3% from last month</p>
+              <div className="text-2xl font-bold">{leads.length}</div>
+              <p className="text-xs text-muted-foreground">Total leads in system</p>
             </CardContent>
           </Card>
           
@@ -151,7 +100,7 @@ const Leads = () => {
               <TrendingUp className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">284</div>
+              <div className="text-2xl font-bold text-red-600">{leads.filter(l => l.temperature === 'hot').length}</div>
               <p className="text-xs text-muted-foreground">Ready to convert</p>
             </CardContent>
           </Card>
@@ -162,8 +111,8 @@ const Leads = () => {
               <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">34.2%</div>
-              <p className="text-xs text-muted-foreground">+2.1% improvement</p>
+              <div className="text-2xl font-bold text-success">{leads.filter(l => l.status === 'closed_won').length}</div>
+              <p className="text-xs text-muted-foreground">Converted leads</p>
             </CardContent>
           </Card>
 
@@ -173,8 +122,8 @@ const Leads = () => {
               <Target className="h-4 w-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gold">73.5</div>
-              <p className="text-xs text-muted-foreground">Quality improving</p>
+              <div className="text-2xl font-bold text-gold">{leads.length > 0 ? (leads.reduce((sum, l) => sum + l.score, 0) / leads.length).toFixed(1) : '0'}</div>
+              <p className="text-xs text-muted-foreground">Average lead score</p>
             </CardContent>
           </Card>
         </div>

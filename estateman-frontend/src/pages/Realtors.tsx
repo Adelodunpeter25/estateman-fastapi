@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,83 +13,85 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, Trophy, DollarSign, TrendingUp, Search, Plus, Edit, Eye, Star, Phone, Mail, MapPin } from "lucide-react"
+import { realtorsService, Realtor, RealtorAnalytics, RealtorCreateData } from "@/services/realtors"
 
-// Sample realtor data
-const realtors = [
-  {
-    id: "R001",
-    name: "Sarah Johnson",
-    email: "sarah.johnson@email.com",
-    phone: "+1 (555) 123-4567",
-    level: "Senior Agent",
-    status: "Active",
-    referralId: "SJ2025001",
-    joinDate: "2022-01-15",
-    totalClients: 45,
-    activeDeals: 8,
-    totalCommissions: 125000,
-    monthlyTarget: 15000,
-    monthlyEarned: 12500,
-    rating: 4.8,
-    specialties: ["Residential", "Luxury Homes"],
-    location: "Downtown District",
-    avatar: "/placeholder.svg"
-  },
-  {
-    id: "R002",
-    name: "Michael Chen",
-    email: "michael.chen@email.com",
-    phone: "+1 (555) 234-5678",
-    level: "Junior Agent",
-    status: "Active",
-    referralId: "MC2025002",
-    joinDate: "2023-06-20",
-    totalClients: 28,
-    activeDeals: 5,
-    totalCommissions: 75000,
-    monthlyTarget: 10000,
-    monthlyEarned: 8500,
-    rating: 4.5,
-    specialties: ["Commercial", "Investment"],
-    location: "Business District",
-    avatar: "/placeholder.svg"
-  },
-  {
-    id: "R003",
-    name: "Emily Rodriguez",
-    email: "emily.rodriguez@email.com",
-    phone: "+1 (555) 345-6789",
-    level: "Team Lead",
-    status: "Active",
-    referralId: "ER2025003",
-    joinDate: "2021-03-10",
-    totalClients: 67,
-    activeDeals: 12,
-    totalCommissions: 185000,
-    monthlyTarget: 20000,
-    monthlyEarned: 18500,
-    rating: 4.9,
-    specialties: ["Luxury", "New Construction"],
-    location: "Uptown Area",
-    avatar: "/placeholder.svg"
-  }
-]
+
 
 const Realtors = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRealtor, setSelectedRealtor] = useState(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [realtors, setRealtors] = useState<Realtor[]>([])
+  const [analytics, setAnalytics] = useState<RealtorAnalytics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [formData, setFormData] = useState<RealtorCreateData>({
+    name: '',
+    email: '',
+    phone: '',
+    level: 'junior',
+    specialties: [],
+    location: '',
+    monthly_target: 0,
+    commission_rate: 0.03,
+    split_percentage: 0.70
+  })
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [realtorsData, analyticsData] = await Promise.all([
+        realtorsService.getRealtors().catch((err: any) => err?.response?.status === 404 ? [] : Promise.reject(err)),
+        realtorsService.getRealtorAnalytics()
+      ])
+      setRealtors(realtorsData)
+      setAnalytics(analyticsData)
+    } catch (error: any) {
+      console.error('Error loading realtor data:', error)
+      if (error?.response?.status === 404) {
+        setRealtors([])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateRealtor = async () => {
+    try {
+      setCreating(true)
+      const newRealtor = await realtorsService.createRealtor(formData)
+      setRealtors(prev => [...prev, newRealtor])
+      setShowAddDialog(false)
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        level: 'junior',
+        specialties: [],
+        location: '',
+        monthly_target: 0,
+        commission_rate: 0.03,
+        split_percentage: 0.70
+      })
+      loadData()
+    } catch (error) {
+      console.error('Error creating realtor:', error)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleFormChange = (field: keyof RealtorCreateData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
 
   const filteredRealtors = realtors.filter(realtor =>
-    realtor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    realtor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    realtor.referralId.toLowerCase().includes(searchTerm.toLowerCase())
+    realtor.realtor_id.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const totalRealtors = realtors.length
-  const activeRealtors = realtors.filter(r => r.status === "Active").length
-  const totalCommissions = realtors.reduce((sum, r) => sum + r.totalCommissions, 0)
-  const averageRating = realtors.reduce((sum, r) => sum + r.rating, 0) / realtors.length
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -130,45 +132,101 @@ const Realtors = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" placeholder="Enter full name" />
+                  <Input 
+                    id="name" 
+                    placeholder="Enter full name" 
+                    value={formData.name}
+                    onChange={(e) => handleFormChange('name', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Enter email address" />
+                  <Input 
+                    id="email" 
+                    type="email"
+                    placeholder="Enter email address" 
+                    value={formData.email}
+                    onChange={(e) => handleFormChange('email', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" placeholder="Enter phone number" />
+                  <Input 
+                    id="phone" 
+                    placeholder="Enter phone number" 
+                    value={formData.phone}
+                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="level">Level</Label>
-                  <Select>
+                  <Select value={formData.level} onValueChange={(value) => handleFormChange('level', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="junior">Junior Agent</SelectItem>
                       <SelectItem value="senior">Senior Agent</SelectItem>
-                      <SelectItem value="lead">Team Lead</SelectItem>
+                      <SelectItem value="team_lead">Team Lead</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" placeholder="Enter location/territory" />
+                  <Input 
+                    id="location" 
+                    placeholder="Enter location/territory" 
+                    value={formData.location}
+                    onChange={(e) => handleFormChange('location', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="target">Monthly Target ($)</Label>
-                  <Input id="target" type="number" placeholder="Enter monthly target" />
+                  <Input 
+                    id="target" 
+                    type="number" 
+                    placeholder="Enter monthly target" 
+                    value={formData.monthly_target}
+                    onChange={(e) => handleFormChange('monthly_target', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commission_rate">Commission Rate (%)</Label>
+                  <Input 
+                    id="commission_rate" 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Enter commission rate (e.g., 0.03 for 3%)" 
+                    value={formData.commission_rate}
+                    onChange={(e) => handleFormChange('commission_rate', parseFloat(e.target.value) || 0.03)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="split_percentage">Split Percentage</Label>
+                  <Input 
+                    id="split_percentage" 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Enter split percentage (e.g., 0.70 for 70%)" 
+                    value={formData.split_percentage}
+                    onChange={(e) => handleFormChange('split_percentage', parseFloat(e.target.value) || 0.70)}
+                  />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="specialties">Specialties</Label>
-                  <Textarea id="specialties" placeholder="Enter specialties (comma-separated)" />
+                  <Textarea 
+                    id="specialties" 
+                    placeholder="Enter specialties (comma-separated)" 
+                    value={formData.specialties?.join(', ') || ''}
+                    onChange={(e) => handleFormChange('specialties', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button>Create Realtor</Button>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={creating}>Cancel</Button>
+                <Button onClick={handleCreateRealtor} disabled={creating}>
+                  {creating ? 'Creating...' : 'Create Realtor'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -178,28 +236,28 @@ const Realtors = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title="Total Realtors"
-            value={totalRealtors}
+            value={analytics?.total_realtors || 0}
             icon={Users}
             change={{ value: "+12%", type: "increase" }}
             description="Active real estate agents"
           />
           <StatsCard
             title="Active Agents"
-            value={activeRealtors}
+            value={analytics?.active_realtors || 0}
             icon={TrendingUp}
             change={{ value: "+8%", type: "increase" }}
             description="Currently working agents"
           />
           <StatsCard
             title="Total Commissions"
-            value={`$${totalCommissions.toLocaleString()}`}
+            value={`$${(analytics?.total_commissions || 0).toLocaleString()}`}
             icon={DollarSign}
             change={{ value: "+15%", type: "increase" }}
             description="This year's earnings"
           />
           <StatsCard
             title="Average Rating"
-            value={averageRating.toFixed(1)}
+            value={analytics?.average_rating?.toFixed(1) || "0.0"}
             icon={Star}
             change={{ value: "+0.2", type: "increase" }}
             description="Team performance rating"
@@ -237,10 +295,10 @@ const Realtors = () => {
                       <div className="flex items-center space-x-3">
                         <Avatar>
                           <AvatarImage src={realtor.avatar} />
-                          <AvatarFallback>{realtor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          <AvatarFallback>{realtor.name?.split(' ').map(n => n[0]).join('') || 'R'}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle className="text-lg">{realtor.name}</CardTitle>
+                          <CardTitle className="text-lg">{realtor.name || `Realtor ${realtor.realtor_id}`}</CardTitle>
                           <CardDescription>ID: {realtor.referralId}</CardDescription>
                         </div>
                       </div>
@@ -283,17 +341,17 @@ const Realtors = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Monthly Progress</span>
-                        <span>{Math.round((realtor.monthlyEarned / realtor.monthlyTarget) * 100)}%</span>
+                        <span>{realtor.monthly_target > 0 ? Math.round((realtor.monthly_earned / realtor.monthly_target) * 100) : 0}%</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div 
                           className="bg-primary h-2 rounded-full transition-all" 
-                          style={{ width: `${Math.min((realtor.monthlyEarned / realtor.monthlyTarget) * 100, 100)}%` }}
+                          style={{ width: `${realtor.monthly_target > 0 ? Math.min((realtor.monthly_earned / realtor.monthly_target) * 100, 100) : 0}%` }}
                         />
                       </div>
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>${realtor.monthlyEarned.toLocaleString()}</span>
-                        <span>${realtor.monthlyTarget.toLocaleString()}</span>
+                        <span>${realtor.monthly_earned.toLocaleString()}</span>
+                        <span>${realtor.monthly_target.toLocaleString()}</span>
                       </div>
                     </div>
 
@@ -338,12 +396,12 @@ const Realtors = () => {
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={realtor.avatar} />
-                              <AvatarFallback>{realtor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                              <AvatarImage src="/placeholder.svg" />
+                              <AvatarFallback>R{realtor.id}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{realtor.name}</div>
-                              <div className="text-sm text-muted-foreground">{realtor.referralId}</div>
+                              <div className="font-medium">Realtor {realtor.realtor_id}</div>
+                              <div className="text-sm text-muted-foreground">{realtor.realtor_id}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -352,18 +410,18 @@ const Realtors = () => {
                             {realtor.level}
                           </Badge>
                         </TableCell>
-                        <TableCell>{realtor.totalClients}</TableCell>
-                        <TableCell>{realtor.activeDeals}</TableCell>
-                        <TableCell>${realtor.monthlyTarget.toLocaleString()}</TableCell>
+                        <TableCell>{realtor.total_clients}</TableCell>
+                        <TableCell>{realtor.active_deals}</TableCell>
+                        <TableCell>${realtor.monthly_target.toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <div className="w-16 bg-muted rounded-full h-2">
                               <div 
                                 className="bg-primary h-2 rounded-full" 
-                                style={{ width: `${Math.min((realtor.monthlyEarned / realtor.monthlyTarget) * 100, 100)}%` }}
+                                style={{ width: `${realtor.monthly_target > 0 ? Math.min((realtor.monthly_earned / realtor.monthly_target) * 100, 100) : 0}%` }}
                               />
                             </div>
-                            <span className="text-sm">{Math.round((realtor.monthlyEarned / realtor.monthlyTarget) * 100)}%</span>
+                            <span className="text-sm">{realtor.monthly_target > 0 ? Math.round((realtor.monthly_earned / realtor.monthly_target) * 100) : 0}%</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -400,24 +458,24 @@ const Realtors = () => {
                   </TableHeader>
                   <TableBody>
                     {realtors.map((realtor) => {
-                      const remaining = realtor.monthlyTarget - realtor.monthlyEarned
+                      const remaining = realtor.monthly_target - realtor.monthly_earned
                       return (
                         <TableRow key={realtor.id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={realtor.avatar} />
-                                <AvatarFallback>{realtor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                <AvatarFallback>{realtor.name?.split(' ').map(n => n[0]).join('') || 'R'}</AvatarFallback>
                               </Avatar>
                               <div>
-                                <div className="font-medium">{realtor.name}</div>
+                                <div className="font-medium">{realtor.name || `Realtor ${realtor.realtor_id}`}</div>
                                 <div className="text-sm text-muted-foreground">{realtor.level}</div>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium">${realtor.totalCommissions.toLocaleString()}</TableCell>
-                          <TableCell>${realtor.monthlyEarned.toLocaleString()}</TableCell>
-                          <TableCell>${realtor.monthlyTarget.toLocaleString()}</TableCell>
+                          <TableCell className="font-medium">${realtor.total_commissions.toLocaleString()}</TableCell>
+                          <TableCell>${realtor.monthly_earned.toLocaleString()}</TableCell>
+                          <TableCell>${realtor.monthly_target.toLocaleString()}</TableCell>
                           <TableCell className={remaining > 0 ? "text-warning" : "text-success"}>
                             ${Math.abs(remaining).toLocaleString()}
                           </TableCell>

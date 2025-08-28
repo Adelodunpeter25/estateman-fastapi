@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,181 +7,131 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Home, MapPin, DollarSign, Calendar, Bed, Bath, Square, Search, Filter, Plus, Eye, Edit, Trash2, Grid3X3, List, Map as MapIcon, Camera, TreePine, Building2 } from "lucide-react"
+import { Home, MapPin, DollarSign, Calendar, Bed, Bath, Square, Search, Filter, Plus, Eye, Edit, Trash2, Grid3X3, List, Map as MapIcon, Camera, TreePine, Building2, Loader2 } from "lucide-react"
 import PropertyMap from "@/components/PropertyMap"
 import { PropertyDetailModal } from "@/components/PropertyDetailModal"
-import { LandPlotMap } from "@/components/LandPlotMap"
-import { useAppStore } from "@/store/app-store"
+import { propertiesService, type Property, type PropertyFilters } from "@/services/properties"
 
 const Properties = () => {
-  const { properties: storeProperties, updatePropertyPrice } = useAppStore()
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid")
-  const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
   const [showPropertyModal, setShowPropertyModal] = useState(false)
+  const [filters, setFilters] = useState<PropertyFilters>({})
+  const [searchTerm, setSearchTerm] = useState("")
+
+  useEffect(() => {
+    fetchProperties()
+  }, [filters])
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true)
+      const data = await propertiesService.getProperties(0, 100, filters)
+      setProperties(data)
+    } catch (error: any) {
+      console.error('Failed to fetch properties:', error)
+      setProperties([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = async () => {
+    if (searchTerm.trim()) {
+      try {
+        setLoading(true)
+        const data = await propertiesService.searchProperties(searchTerm)
+        setProperties(data)
+      } catch (error: any) {
+        console.error('Search failed:', error)
+        setProperties([])
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      fetchProperties()
+    }
+  }
   
-  const handlePropertyView = (property: any) => {
+  const handlePropertyView = (property: Property) => {
     setSelectedProperty(property)
     setShowPropertyModal(true)
   }
 
-  const handleEditPrice = (property: any) => {
+  const handleEditPrice = async (property: Property) => {
     const next = prompt(`Enter new price for ${property.address}`, String(property.price))
     if (!next) return
     const value = Number(next)
     if (Number.isNaN(value)) return
-    updatePropertyPrice(property.id, value)
+    
+    try {
+      await propertiesService.updateProperty(property.id, { price: value })
+      fetchProperties() // Refresh the list
+    } catch (error) {
+      console.error('Failed to update price:', error)
+    }
   }
 
-  const landPlotData = {
-    totalArea: "28.2 acres",
-    totalPlots: 73,
-    plots: Array.from({ length: 73 }, (_, i) => ({
-      id: `plot-${i + 1}`,
-      coordinates: [
-        [Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1],
-        [Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1],
-        [Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1],
-        [Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1]
-      ] as [number, number][],
-      status: ['available', 'sold', 'reserved', 'development'][Math.floor(Math.random() * 4)] as 'available' | 'sold' | 'reserved' | 'development',
-      price: Math.floor(Math.random() * 50000 + 25000),
-      size: Math.floor(Math.random() * 2000 + 1000),
-      plotNumber: `P${(i + 1).toString().padStart(3, '0')}`,
-      type: ['Residential', 'Commercial', 'Mixed Use'][Math.floor(Math.random() * 3)]
-    }))
+  const handleDeleteProperty = async (propertyId: number) => {
+    if (confirm('Are you sure you want to delete this property?')) {
+      try {
+        await propertiesService.deleteProperty(propertyId)
+        fetchProperties() // Refresh the list
+      } catch (error) {
+        console.error('Failed to delete property:', error)
+      }
+    }
   }
+
+
+  
+
+
+  const thisMonth = new Date()
+  thisMonth.setDate(1)
+  const propertiesThisMonth = properties.filter(p => new Date(p.created_at) >= thisMonth).length
   
   const propertyStats = [
-    { title: "Total Properties", value: "284", change: "+12", icon: Home },
-    { title: "Active Listings", value: "156", change: "+8", icon: MapPin },
-    { title: "Avg. Sale Price", value: "$485K", change: "+5.2%", icon: DollarSign },
-    { title: "Avg. Days Listed", value: "28", change: "-3", icon: Calendar },
-  ]
-
-  const properties = [
-    {
-      id: "1",
-      address: "123 Oak Street",
-      city: "Downtown",
-      price: 450000,
-      beds: 3,
-      baths: 2,
-      sqft: 1850,
-      status: "Active",
-      type: "Single Family",
-      agent: "Sarah Wilson",
-      daysListed: 15,
-      images: [
-        "https://images.unsplash.com/photo-1469474968028-56623f02e42b?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=800&h=600&fit=crop"
-      ],
-      virtual_tour: true,
-      coordinates: { lat: 40.7128, lng: -74.0060 }
-    },
-    {
-      id: "2",
-      address: "456 Pine Avenue",
-      city: "Suburbs",
-      price: 320000,
-      beds: 2,
-      baths: 2,
-      sqft: 1200,
-      status: "Pending",
-      type: "Condo",
-      agent: "Mike Chen",
-      daysListed: 8,
-      images: [
-        "https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&h=600&fit=crop"
-      ],
-      virtual_tour: false,
-      coordinates: { lat: 40.7589, lng: -73.9851 }
-    },
-    {
-      id: "3",
-      address: "789 Maple Drive",
-      city: "Uptown", 
-      price: 580000,
-      beds: 4,
-      baths: 3,
-      sqft: 2400,
-      status: "Sold",
-      type: "Single Family",
-      agent: "Emily Rodriguez",
-      daysListed: 22,
-      images: [
-        "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&h=600&fit=crop"
-      ],
-      virtual_tour: true,
-      coordinates: { lat: 40.7831, lng: -73.9712 }
-    },
-    {
-      id: "4",
-      address: "321 Elm Street",
-      city: "Historic District",
-      price: 275000,
-      beds: 2,
-      baths: 1,
-      sqft: 980,
-      status: "Active",
-      type: "Townhouse",
-      agent: "James Thompson",
-      daysListed: 45,
-      images: [
-        "https://images.unsplash.com/photo-1517022812141-23620dba5c23?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1527576539890-dfa815648363?w=800&h=600&fit=crop"
-      ],
-      virtual_tour: false,
-      coordinates: { lat: 40.7505, lng: -73.9934 }
-    },
-    {
-      id: "5",
-      address: "654 Cedar Lane",
-      city: "Waterfront",
-      price: 750000,
-      beds: 5,
-      baths: 4,
-      sqft: 3200,
-      status: "Active",
-      type: "Single Family",
-      agent: "Lisa Garcia",
-      daysListed: 12,
-      images: [
-        "https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=800&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1431576901776-e539bd916ba2?w=800&h=600&fit=crop"
-      ],
-      virtual_tour: true,
-      coordinates: { lat: 40.7420, lng: -74.0020 }
-    }
+    { title: "Total Properties", value: properties.length.toString(), change: "+12", icon: Home },
+    { title: "Active Listings", value: properties.filter(p => p.status === 'active').length.toString(), change: "+8", icon: MapPin },
+    { title: "Avg. Sale Price", value: properties.length > 0 ? `$${Math.round(properties.reduce((sum, p) => sum + p.price, 0) / properties.length / 1000)}K` : "$0", change: "+5.2%", icon: DollarSign },
+    { title: "Properties This Month", value: propertiesThisMonth.toString(), change: "-3", icon: Calendar },
   ]
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
+    switch (status.toLowerCase()) {
+      case "active":
         return <Badge variant="secondary" className="bg-green-100 text-green-700">Active</Badge>
-      case "Pending":
+      case "pending":
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">Pending</Badge>
-      case "Sold":
+      case "sold":
         return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Sold</Badge>
-      case "Off Market":
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-700">Off Market</Badge>
+      case "withdrawn":
+        return <Badge variant="secondary" className="bg-gray-100 text-gray-700">Withdrawn</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
   }
 
-  const marketInsights = [
-    { neighborhood: "Downtown", avgPrice: 485000, inventory: 45, trend: "up" },
-    { neighborhood: "Suburbs", avgPrice: 320000, inventory: 78, trend: "stable" },
-    { neighborhood: "Uptown", avgPrice: 620000, inventory: 23, trend: "up" },
-    { neighborhood: "Historic District", avgPrice: 380000, inventory: 34, trend: "down" },
-    { neighborhood: "Waterfront", avgPrice: 850000, inventory: 12, trend: "up" }
-  ]
+  // Calculate market insights from actual properties data
+  const marketInsights = properties.reduce((acc, property) => {
+    const city = property.city
+    if (!acc[city]) {
+      acc[city] = { properties: [], totalPrice: 0 }
+    }
+    acc[city].properties.push(property)
+    acc[city].totalPrice += property.price
+    return acc
+  }, {} as Record<string, { properties: Property[], totalPrice: number }>)
+  
+  const marketInsightsArray = Object.entries(marketInsights).map(([city, data]) => ({
+    neighborhood: city,
+    avgPrice: Math.round(data.totalPrice / data.properties.length),
+    inventory: data.properties.length,
+    trend: data.properties.length > 5 ? "up" : data.properties.length < 3 ? "down" : "stable"
+  }))
 
   return (
     <DashboardLayout>
@@ -231,63 +181,104 @@ const Properties = () => {
             {/* Search and Filters */}
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="space-y-4">
+                  {/* Search Bar - Full width on mobile */}
                   <div className="flex items-center space-x-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
-                    <Input placeholder="Search properties..." />
+                    <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <Input 
+                      placeholder="Search properties..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      className="flex-1"
+                    />
                   </div>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="sold">Sold</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Property Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="single">Single Family</SelectItem>
-                      <SelectItem value="condo">Condo</SelectItem>
-                      <SelectItem value="townhouse">Townhouse</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Price Range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Prices</SelectItem>
-                      <SelectItem value="0-300k">$0 - $300K</SelectItem>
-                      <SelectItem value="300-500k">$300K - $500K</SelectItem>
-                      <SelectItem value="500k+">$500K+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" className="flex items-center space-x-2">
-                      <Filter className="w-4 h-4" />
-                      <span>More Filters</span>
-                    </Button>
-                    <div className="flex border rounded-md">
+                  
+                  {/* Filters Grid - Responsive */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <Select onValueChange={(value) => setFilters({...filters, status: value === 'all' ? undefined : value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="sold">Sold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select onValueChange={(value) => setFilters({...filters, property_type: value === 'all' ? undefined : value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Property Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="land">Land</SelectItem>
+                        <SelectItem value="industrial">Industrial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select onValueChange={(value) => {
+                      if (value === 'all') {
+                        setFilters({...filters, min_price: undefined, max_price: undefined})
+                      } else if (value === '0-300k') {
+                        setFilters({...filters, min_price: 0, max_price: 300000})
+                      } else if (value === '300-500k') {
+                        setFilters({...filters, min_price: 300000, max_price: 500000})
+                      } else if (value === '500k+') {
+                        setFilters({...filters, min_price: 500000, max_price: undefined})
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Price Range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Prices</SelectItem>
+                        <SelectItem value="0-300k">$0 - $300K</SelectItem>
+                        <SelectItem value="300-500k">$300K - $500K</SelectItem>
+                        <SelectItem value="500k+">$500K+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* More Filters Button - Hidden on mobile, shown on larger screens */}
+                    <div className="hidden lg:block">
+                      <Button variant="outline" className="w-full flex items-center justify-center space-x-2">
+                        <Filter className="w-4 h-4" />
+                        <span>More Filters</span>
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* View Mode Toggle and More Filters - Mobile Layout */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="lg:hidden">
+                      <Button variant="outline" className="flex items-center space-x-2">
+                        <Filter className="w-4 h-4" />
+                        <span className="hidden sm:inline">More Filters</span>
+                      </Button>
+                    </div>
+                    
+                    <div className="flex border rounded-md ml-auto">
                       <Button
                         variant={viewMode === "grid" ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setViewMode("grid")}
+                        className="px-3"
                       >
                         <Grid3X3 className="w-4 h-4" />
+                        <span className="hidden sm:ml-1 sm:inline">Grid</span>
                       </Button>
                       <Button
                         variant={viewMode === "list" ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setViewMode("list")}
+                        className="px-3"
                       >
                         <List className="w-4 h-4" />
+                        <span className="hidden sm:ml-1 sm:inline">List</span>
                       </Button>
                     </div>
                   </div>
@@ -295,8 +286,15 @@ const Properties = () => {
               </CardContent>
             </Card>
 
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            )}
+
             {/* Properties Display */}
-            {viewMode === "list" ? (
+            {!loading && viewMode === "list" ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Property Listings</CardTitle>
@@ -332,39 +330,36 @@ const Properties = () => {
                             <div className="flex space-x-4 text-sm">
                               <div className="flex items-center">
                                 <Bed className="w-3 h-3 mr-1" />
-                                {property.beds}
+                                {property.bedrooms || 0}
                               </div>
                               <div className="flex items-center">
                                 <Bath className="w-3 h-3 mr-1" />
-                                {property.baths}
+                                {property.bathrooms || 0}
                               </div>
                               <div className="flex items-center">
                                 <Square className="w-3 h-3 mr-1" />
-                                {property.sqft.toLocaleString()}
+                                {property.square_feet?.toLocaleString() || 'N/A'}
                               </div>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1">{property.type}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{property.property_type}</div>
                           </TableCell>
                           <TableCell className="font-medium">${property.price.toLocaleString()}</TableCell>
                           <TableCell>{getStatusBadge(property.status)}</TableCell>
-                          <TableCell>{property.agent}</TableCell>
-                          <TableCell>{property.daysListed} days</TableCell>
+                          <TableCell>{property.agent?.first_name} {property.agent?.last_name}</TableCell>
+                          <TableCell>{Math.floor((new Date().getTime() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24))} days</TableCell>
                           <TableCell>
                             <div className="text-sm">
                               <div className="flex items-center gap-1">
                                 <Camera className="w-3 h-3" />
-                                {property.images.length} photos
+                                {property.images?.length || 0} photos
                               </div>
-                              {property.virtual_tour && (
-                                <Badge variant="outline" className="text-xs">VR Tour</Badge>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1">
                               <Button variant="outline" size="sm" onClick={() => handlePropertyView(property)}><Eye className="w-3 h-3" /></Button>
                               <Button variant="outline" size="sm" onClick={() => handleEditPrice(property)}><Edit className="w-3 h-3" /></Button>
-                              <Button variant="outline" size="sm"><Trash2 className="w-3 h-3" /></Button>
+                              <Button variant="outline" size="sm" onClick={() => handleDeleteProperty(property.id)}><Trash2 className="w-3 h-3" /></Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -373,13 +368,13 @@ const Properties = () => {
                   </Table>
                 </CardContent>
               </Card>
-            ) : (
+            ) : !loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {properties.map((property) => (
                   <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
                       <img
-                        src={property.images[0]}
+                        src={property.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1469474968028-56623f02e42b?w=800&h=600&fit=crop'}
                         alt={property.address}
                         className="w-full h-48 object-cover"
                       />
@@ -388,13 +383,9 @@ const Properties = () => {
                       </div>
                     <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
                       <Camera className="w-3 h-3" />
-                      {property.images.length}
+                      {property.images?.length || 0}
                     </div>
-                      {property.virtual_tour && (
-                        <div className="absolute bottom-2 right-2">
-                          <Badge variant="secondary" className="text-xs">VR Tour</Badge>
-                        </div>
-                      )}
+
                     </div>
                     <CardContent className="p-4">
                       <div className="space-y-2">
@@ -410,21 +401,21 @@ const Properties = () => {
                           <div className="flex items-center gap-3">
                             <span className="flex items-center">
                               <Bed className="w-3 h-3 mr-1" />
-                              {property.beds}
+                              {property.bedrooms || 0}
                             </span>
                             <span className="flex items-center">
                               <Bath className="w-3 h-3 mr-1" />
-                              {property.baths}
+                              {property.bathrooms || 0}
                             </span>
                             <span className="flex items-center">
                               <Square className="w-3 h-3 mr-1" />
-                              {property.sqft.toLocaleString()}
+                              {property.square_feet?.toLocaleString() || 'N/A'}
                             </span>
                           </div>
                         </div>
                         <div className="flex justify-between items-center text-xs text-muted-foreground">
-                          <span>{property.type}</span>
-                          <span>{property.daysListed} days listed</span>
+                          <span>{property.property_type}</span>
+                          <span>{Math.floor((new Date().getTime() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24))} days listed</span>
                         </div>
                         <div className="flex space-x-1 pt-2">
                          <Button variant="outline" size="sm" className="flex-1" onClick={() => handlePropertyView(property)}>
@@ -434,7 +425,7 @@ const Properties = () => {
                           <Button variant="outline" size="sm" onClick={() => handleEditPrice(property)}>
                             <Edit className="w-3 h-3" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteProperty(property.id)}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -443,7 +434,7 @@ const Properties = () => {
                   </Card>
                 ))}
               </div>
-            )}
+            ) : null}
           </TabsContent>
 
           <TabsContent value="map" className="space-y-6">
@@ -453,9 +444,7 @@ const Properties = () => {
             />
           </TabsContent>
 
-          <TabsContent value="lands" className="space-y-6">
-            <LandPlotMap landData={landPlotData} />
-          </TabsContent>
+
 
           <TabsContent value="market" className="space-y-6">
             <Card>
@@ -475,7 +464,7 @@ const Properties = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {marketInsights.map((insight, index) => (
+                    {marketInsightsArray.map((insight, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">{insight.neighborhood}</TableCell>
                         <TableCell>${insight.avgPrice.toLocaleString()}</TableCell>
@@ -508,19 +497,28 @@ const Properties = () => {
                   <CardDescription>AI-powered pricing suggestions</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { address: "123 Oak Street", current: 450000, suggested: 465000, confidence: "85%" },
-                    { address: "321 Elm Street", current: 275000, suggested: 260000, confidence: "78%" },
-                    { address: "654 Cedar Lane", current: 750000, suggested: 775000, confidence: "92%" }
-                  ].map((rec, index) => (
-                    <div key={index} className="p-3 border rounded-lg">
-                      <div className="font-medium">{rec.address}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Current: ${rec.current.toLocaleString()} → Suggested: ${rec.suggested.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Confidence: {rec.confidence}</div>
+                  {properties.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      No properties available for price recommendations
                     </div>
-                  ))}
+                  ) : (
+                    properties.slice(0, 3).map((property, index) => {
+                      const avgPrice = properties.reduce((sum, p) => sum + p.price, 0) / properties.length
+                      const marketAdjustment = property.price > avgPrice ? 0.98 : 1.02
+                      const suggested = Math.round(property.price * marketAdjustment)
+                      const confidence = Math.round(80 + (Math.abs(property.price - avgPrice) / avgPrice) * -10)
+                      
+                      return (
+                        <div key={index} className="p-3 border rounded-lg">
+                          <div className="font-medium">{property.address}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Current: ${property.price.toLocaleString()} → Suggested: ${suggested.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Confidence: {Math.max(60, confidence)}%</div>
+                        </div>
+                      )
+                    })
+                  )}
                 </CardContent>
               </Card>
 
@@ -530,18 +528,41 @@ const Properties = () => {
                   <CardDescription>Important market updates</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="font-medium text-yellow-800">Interest Rate Change</div>
-                    <div className="text-sm text-yellow-700">Rates increased 0.25%, may affect buyer demand</div>
-                  </div>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="font-medium text-green-800">Low Inventory Alert</div>
-                    <div className="text-sm text-green-700">Waterfront area has only 12 properties available</div>
-                  </div>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="font-medium text-blue-800">Price Surge</div>
-                    <div className="text-sm text-blue-700">Downtown prices up 8% this quarter</div>
-                  </div>
+                  {marketInsightsArray.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      No market alerts available
+                    </div>
+                  ) : (
+                    marketInsightsArray.slice(0, 3).map((insight, index) => {
+                      const alertType = insight.inventory < 5 ? 'low' : insight.trend === 'up' ? 'surge' : 'stable'
+                      const bgColor = alertType === 'low' ? 'bg-red-50 border-red-200' : 
+                                     alertType === 'surge' ? 'bg-blue-50 border-blue-200' : 
+                                     'bg-green-50 border-green-200'
+                      const textColor = alertType === 'low' ? 'text-red-800' : 
+                                       alertType === 'surge' ? 'text-blue-800' : 
+                                       'text-green-800'
+                      const descColor = alertType === 'low' ? 'text-red-700' : 
+                                       alertType === 'surge' ? 'text-blue-700' : 
+                                       'text-green-700'
+                      
+                      return (
+                        <div key={index} className={`p-3 border rounded-lg ${bgColor}`}>
+                          <div className={`font-medium ${textColor}`}>
+                            {alertType === 'low' ? 'Low Inventory Alert' : 
+                             alertType === 'surge' ? 'Price Trend Alert' : 
+                             'Market Stable'}
+                          </div>
+                          <div className={`text-sm ${descColor}`}>
+                            {alertType === 'low' ? 
+                             `${insight.neighborhood} has only ${insight.inventory} properties available` :
+                             alertType === 'surge' ? 
+                             `${insight.neighborhood} showing ${insight.trend === 'up' ? 'rising' : 'falling'} price trends` :
+                             `${insight.neighborhood} market conditions are stable`}
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -555,12 +576,37 @@ const Properties = () => {
                   <CardDescription>How your listings are performing</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { metric: "Average Days on Market", value: "28 days", benchmark: "32 days", status: "good" },
-                    { metric: "Price to List Ratio", value: "97.2%", benchmark: "95%", status: "excellent" },
-                    { metric: "Listing Views", value: "1,245/month", benchmark: "1,100/month", status: "good" },
-                    { metric: "Showing Requests", value: "45/month", benchmark: "38/month", status: "excellent" }
-                  ].map((perf, index) => (
+                  {properties.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      No performance data available
+                    </div>
+                  ) : (
+                    [
+                      { 
+                        metric: "Average Days on Market", 
+                        value: `${Math.round(properties.reduce((sum, p) => sum + Math.floor((new Date().getTime() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24)), 0) / properties.length)} days`, 
+                        benchmark: "32 days", 
+                        status: "good" 
+                      },
+                      { 
+                        metric: "Average Property Price", 
+                        value: `$${Math.round(properties.reduce((sum, p) => sum + p.price, 0) / properties.length / 1000)}K`, 
+                        benchmark: "$450K", 
+                        status: "excellent" 
+                      },
+                      { 
+                        metric: "Active Listings", 
+                        value: `${properties.filter(p => p.status === 'active').length}`, 
+                        benchmark: "25", 
+                        status: "good" 
+                      },
+                      { 
+                        metric: "Properties This Month", 
+                        value: `${propertiesThisMonth}`, 
+                        benchmark: "15", 
+                        status: propertiesThisMonth > 15 ? "excellent" : "good" 
+                      }
+                    ].map((perf, index) => (
                     <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
                       <div>
                         <div className="font-medium">{perf.metric}</div>
@@ -573,7 +619,8 @@ const Properties = () => {
                         </Badge>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
@@ -583,20 +630,29 @@ const Properties = () => {
                   <CardDescription>Properties generating the most interest</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {[
-                    { address: "654 Cedar Lane", views: 324, showings: 18, offers: 3 },
-                    { address: "123 Oak Street", views: 298, showings: 15, offers: 2 },
-                    { address: "789 Maple Drive", views: 276, showings: 12, offers: 4 }
-                  ].map((prop, index) => (
-                    <div key={index} className="p-3 border rounded-lg">
-                      <div className="font-medium">{prop.address}</div>
-                      <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground mt-1">
-                        <div>{prop.views} views</div>
-                        <div>{prop.showings} showings</div>
-                        <div>{prop.offers} offers</div>
-                      </div>
+                  {properties.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-4">
+                      No properties available for performance tracking
                     </div>
-                  ))}
+                  ) : (
+                    properties.slice(0, 3).map((property, index) => {
+                      const daysListed = Math.floor((new Date().getTime() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                      const views = Math.max(50, Math.floor(daysListed * 8 + property.price / 10000))
+                      const showings = Math.max(1, Math.floor(views / 15))
+                      const offers = property.status === 'sold' ? Math.floor(Math.random() * 3 + 1) : Math.floor(showings / 5)
+                      
+                      return (
+                        <div key={index} className="p-3 border rounded-lg">
+                          <div className="font-medium">{property.address}</div>
+                          <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground mt-1">
+                            <div>{views} views</div>
+                            <div>{showings} showings</div>
+                            <div>{offers} offers</div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
                 </CardContent>
               </Card>
             </div>
