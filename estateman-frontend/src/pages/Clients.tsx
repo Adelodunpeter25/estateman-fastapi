@@ -16,6 +16,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Users, Star, TrendingUp, DollarSign, Search, Plus, Edit, Eye, Phone, Mail, MapPin, Calendar, Award, Grid3X3, List, Check, ChevronsUpDown } from "lucide-react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DuplicateDetection } from "@/components/DuplicateDetection"
+import { CommunicationManager } from "@/components/CommunicationManager"
+import { RewardCatalog } from "@/components/RewardCatalog"
+import { ClientDetailModal } from "@/components/ClientDetailModal"
+import { LeadPipeline } from "@/components/LeadPipeline"
 import { realtorsService } from "@/services/realtors"
 
 
@@ -31,6 +36,8 @@ const Clients = () => {
   const [creating, setCreating] = useState(false)
   const [realtors, setRealtors] = useState<Array<{id: number, name: string, realtor_id: string}>>([])
   const [realtorOpen, setRealtorOpen] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const [formData, setFormData] = useState<ClientCreateData>({
     first_name: '',
     last_name: '',
@@ -122,14 +129,16 @@ const Clients = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active":
-        return "bg-success/10 text-success border-success/20"
-      case "Lead":
-        return "bg-warning/10 text-warning border-warning/20"
-      case "Inactive":
-        return "bg-muted text-muted-foreground"
+      case "active":
+        return "bg-green-100 text-green-800"
+      case "lead":
+        return "bg-yellow-100 text-yellow-800"
+      case "inactive":
+        return "bg-gray-100 text-gray-800"
+      case "converted":
+        return "bg-blue-100 text-blue-800"
       default:
-        return "bg-muted text-muted-foreground"
+        return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -362,7 +371,11 @@ const Clients = () => {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="pipeline">Lead Pipeline</TabsTrigger>
             <TabsTrigger value="loyalty">Loyalty Program</TabsTrigger>
+            <TabsTrigger value="duplicates">Duplicate Detection</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
+            <TabsTrigger value="rewards">Reward Catalog</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -458,7 +471,12 @@ const Clients = () => {
 
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <div className="text-sm font-medium mb-1">Agent</div>
-                      <div className="text-sm text-muted-foreground">Agent ID: {client.assigned_agent_id || 'Unassigned'}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {client.assigned_agent 
+                          ? `${client.assigned_agent.first_name} ${client.assigned_agent.last_name}`
+                          : 'Unassigned'
+                        }
+                      </div>
                       <div className="text-xs text-muted-foreground">Source: {client.lead_source || 'Unknown'}</div>
                     </div>
 
@@ -499,11 +517,17 @@ const Clients = () => {
                     </div>
 
                     <div className="flex justify-between">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setSelectedClient(client)
+                        setShowDetailModal(true)
+                      }}>
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setSelectedClient(client)
+                        setShowDetailModal(true)
+                      }}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                       </Button>
@@ -558,7 +582,12 @@ const Clients = () => {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-sm">Agent ID: {client.assigned_agent_id || 'Unassigned'}</div>
+                            <div className="font-medium text-sm">
+                              {client.assigned_agent 
+                                ? `${client.assigned_agent.first_name} ${client.assigned_agent.last_name}`
+                                : 'Unassigned'
+                              }
+                            </div>
                             <div className="text-xs text-muted-foreground">Source: {client.lead_source || 'Unknown'}</div>
                           </div>
                         </TableCell>
@@ -597,6 +626,10 @@ const Clients = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="pipeline" className="space-y-4">
+            <LeadPipeline />
           </TabsContent>
 
           <TabsContent value="loyalty" className="space-y-4">
@@ -667,7 +700,29 @@ const Clients = () => {
               </Card>
             </div>
           </TabsContent>
+
+          <TabsContent value="duplicates" className="space-y-4">
+            <DuplicateDetection />
+          </TabsContent>
+
+          <TabsContent value="communication" className="space-y-4">
+            <CommunicationManager />
+          </TabsContent>
+
+          <TabsContent value="rewards" className="space-y-4">
+            <RewardCatalog />
+          </TabsContent>
         </Tabs>
+        
+        <ClientDetailModal
+          client={selectedClient}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false)
+            setSelectedClient(null)
+          }}
+          onUpdate={loadData}
+        />
       </div>
     </DashboardLayout>
   )

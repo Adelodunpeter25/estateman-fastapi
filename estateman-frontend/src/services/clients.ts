@@ -18,6 +18,12 @@ export interface Client {
   preferred_location?: string;
   property_interests?: string[];
   assigned_agent_id?: number;
+  assigned_agent?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
   lead_source?: string;
   referral_code?: string;
   tags?: string[];
@@ -272,6 +278,93 @@ class ClientsService {
 
   async getLoyaltyTransactions(clientId: number): Promise<LoyaltyTransaction[]> {
     const response = await api.get(`/clients/${clientId}/loyalty/transactions/`);
+    return response.data;
+  }
+
+  // Duplicate Detection
+  async detectDuplicates(email?: string, phone?: string): Promise<any[]> {
+    const response = await api.get('/clients/duplicates/detect', {
+      params: { email, phone }
+    });
+    return response.data.duplicates;
+  }
+
+  async mergeClients(primaryId: number, duplicateId: number): Promise<void> {
+    await api.post('/clients/duplicates/merge', null, {
+      params: { primary_id: primaryId, duplicate_id: duplicateId }
+    });
+  }
+
+  // Communication
+  async sendEmail(clientId: number, templateId: number, agentId?: number): Promise<any> {
+    const response = await api.post(`/clients/${clientId}/send-email`, null, {
+      params: { template_id: templateId, agent_id: agentId }
+    });
+    return response.data;
+  }
+
+  async sendSMS(clientId: number, message: string): Promise<any> {
+    const response = await api.post(`/clients/${clientId}/send-sms`, null, {
+      params: { message }
+    });
+    return response.data;
+  }
+
+  async getTemplates(type?: string): Promise<any[]> {
+    const response = await api.get('/clients/templates/', {
+      params: { type }
+    });
+    return response.data.templates;
+  }
+
+  async createTemplate(data: {
+    name: string;
+    type: string;
+    subject: string;
+    content: string;
+  }): Promise<any> {
+    const response = await api.post('/clients/templates/', null, {
+      params: data
+    });
+    return response.data;
+  }
+
+  async createCampaign(data: {
+    name: string;
+    type: string;
+    template_id: number;
+  }): Promise<any> {
+    const response = await api.post('/clients/campaigns/', null, {
+      params: data
+    });
+    return response.data;
+  }
+
+  async sendBulkCommunication(campaignId: number): Promise<any> {
+    const response = await api.post(`/clients/campaigns/${campaignId}/send`);
+    return response.data;
+  }
+
+  // Rewards
+  async getRewards(): Promise<any[]> {
+    const response = await api.get('/clients/rewards/');
+    return response.data.rewards;
+  }
+
+  async createReward(data: {
+    name: string;
+    description: string;
+    points_required: number;
+    category?: string;
+  }): Promise<any> {
+    const response = await api.post('/clients/rewards/', null, {
+      params: data
+    });
+    return response.data;
+  }
+
+  async redeemReward(clientId: number, rewardId: number): Promise<any> {
+    const response = await api.post(`/clients/${clientId}/rewards/${rewardId}/redeem`);
     return response.data;
   }
 }

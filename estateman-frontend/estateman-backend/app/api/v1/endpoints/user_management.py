@@ -3,10 +3,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from io import StringIO
-from ...api.deps import get_db, get_current_user, get_admin_user
-from ...models.user import User
-from ...schemas.realtor import BulkUserImport, UserActivityLog, RoleAssignmentRequest, AuditLogResponse
-from ...services.user_management import UserManagementService, RoleManagementService
+from app.api.deps import get_db, get_current_user, get_admin_user
+from app.models.user import User
+from app.schemas.realtor import BulkUserImport, UserActivityLog, RoleAssignmentRequest, AuditLogResponse
+from app.services.user_management import UserManagementService, RoleManagementService
 
 router = APIRouter()
 

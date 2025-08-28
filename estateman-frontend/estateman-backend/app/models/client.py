@@ -206,3 +206,80 @@ class ClientSegment(Base):
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class RewardCatalog(Base):
+    __tablename__ = "reward_catalog"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    points_required = Column(Integer, nullable=False)
+    category = Column(String(100))
+    image_url = Column(String(500))
+    terms_conditions = Column(Text)
+    is_active = Column(Boolean, default=True)
+    stock_quantity = Column(Integer)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class CommunicationTemplate(Base):
+    __tablename__ = "communication_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    type = Column(Enum(CommunicationType), nullable=False)
+    subject = Column(String(255))
+    content = Column(Text, nullable=False)
+    variables = Column(JSON)  # Available template variables
+    is_active = Column(Boolean, default=True)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class CommunicationCampaign(Base):
+    __tablename__ = "communication_campaigns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    type = Column(Enum(CommunicationType), nullable=False)
+    template_id = Column(Integer, ForeignKey("communication_templates.id"))
+    target_segment = Column(JSON)  # Client filtering criteria
+    scheduled_at = Column(DateTime(timezone=True))
+    status = Column(String(50), default="draft")  # draft, scheduled, sent, completed
+    
+    # Statistics
+    total_recipients = Column(Integer, default=0)
+    sent_count = Column(Integer, default=0)
+    delivered_count = Column(Integer, default=0)
+    opened_count = Column(Integer, default=0)
+    clicked_count = Column(Integer, default=0)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    template = relationship("CommunicationTemplate")
+
+class ClientDuplicate(Base):
+    __tablename__ = "client_duplicates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    primary_client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    duplicate_client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    similarity_score = Column(Float, nullable=False)
+    match_criteria = Column(JSON)  # What fields matched
+    status = Column(String(50), default="pending")  # pending, merged, ignored
+    merged_by = Column(Integer, ForeignKey("users.id"))
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    resolved_at = Column(DateTime(timezone=True))
+    
+    # Relationships
+    primary_client = relationship("Client", foreign_keys=[primary_client_id])
+    duplicate_client = relationship("Client", foreign_keys=[duplicate_client_id])
+    merged_by_user = relationship("User")

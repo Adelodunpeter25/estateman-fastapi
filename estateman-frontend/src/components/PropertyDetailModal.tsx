@@ -1,8 +1,10 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { 
   Bed, 
   Bath, 
@@ -14,28 +16,12 @@ import {
   Share2,
   Phone,
   Mail,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Download,
+  Clock
 } from "lucide-react"
-
-interface Property {
-  id: string
-  address: string
-  price: number
-  beds: number
-  baths: number
-  sqft: number
-  status: string
-  images: string[]
-  coordinates: [number, number]
-  type?: string
-  description?: string
-  agent?: string
-  listedDate?: string
-  lotSize?: string
-  yearBuilt?: number
-  propertyFeatures?: string[]
-  neighborhood?: string
-}
+import { propertiesService, type Property, type PropertyImage, type PropertyDocument } from "@/services/properties"
 
 interface PropertyDetailModalProps {
   property: Property | null
@@ -44,6 +30,64 @@ interface PropertyDetailModalProps {
 }
 
 export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetailModalProps) {
+  const [images, setImages] = useState<PropertyImage[]>([])
+  const [documents, setDocuments] = useState<PropertyDocument[]>([])
+  const [showings, setShowings] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [showingForm, setShowingForm] = useState({
+    client_name: '',
+    client_email: '',
+    client_phone: '',
+    showing_date: '',
+    notes: ''
+  })
+
+  useEffect(() => {
+    if (property && isOpen) {
+      fetchPropertyDetails()
+    }
+  }, [property, isOpen])
+
+  const fetchPropertyDetails = async () => {
+    if (!property) return
+    
+    try {
+      setLoading(true)
+      const [imagesData, documentsData, showingsData] = await Promise.all([
+        propertiesService.getPropertyImages(property.id),
+        propertiesService.getPropertyDocuments(property.id),
+        propertiesService.getPropertyShowings(property.id)
+      ])
+      setImages(imagesData)
+      setDocuments(documentsData)
+      setShowings(showingsData)
+    } catch (error) {
+      console.error('Failed to fetch property details:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleScheduleShowing = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!property) return
+
+    try {
+      await propertiesService.schedulePropertyShowing(property.id, {
+        ...showingForm,
+        showing_date: new Date(showingForm.showing_date).toISOString()
+      })
+      setShowScheduleForm(false)
+      setShowingForm({ client_name: '', client_email: '', client_phone: '', showing_date: '', notes: '' })
+      fetchPropertyDetails()
+      alert('Showing scheduled successfully!')
+    } catch (error) {
+      console.error('Failed to schedule showing:', error)
+      alert('Failed to schedule showing')
+    }
+  }
+
   if (!property) return null
 
   const getStatusColor = (status: string) => {
@@ -81,17 +125,23 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
           <div className="relative">
             <Carousel className="w-full">
               <CarouselContent>
-                {property.images.map((image, index) => (
-                  <CarouselItem key={index}>
+                {images.length > 0 ? images.map((image, index) => (
+                  <CarouselItem key={image.id}>
                     <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                       <img 
-                        src={image} 
-                        alt={`Property ${index + 1}`} 
+                        src={image.image_url} 
+                        alt={image.caption || `Property ${index + 1}`} 
                         className="w-full h-full object-cover"
                       />
                     </div>
                   </CarouselItem>
-                ))}
+                )) : (
+                  <CarouselItem>
+                    <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                      <p className="text-muted-foreground">No images available</p>
+                    </div>
+                  </CarouselItem>
+                )}
               </CarouselContent>
               <CarouselPrevious className="left-2" />
               <CarouselNext className="right-2" />
@@ -120,28 +170,28 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Bed className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">{property.beds}</span>
+                    <span className="font-semibold">{property.bedrooms || 0}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Bedrooms</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Bath className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">{property.baths}</span>
+                    <span className="font-semibold">{property.bathrooms || 0}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Bathrooms</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Square className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">{property.sqft.toLocaleString()}</span>
+                    <span className="font-semibold">{property.square_feet?.toLocaleString() || 'N/A'}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Sq Ft</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <Calendar className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">{property.yearBuilt || "2020"}</span>
+                    <span className="font-semibold">{property.year_built || "N/A"}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Year Built</p>
                 </div>
@@ -177,23 +227,62 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
                 </div>
               </div>
 
+              {/* Documents */}
+              {documents.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">Documents</h3>
+                  <div className="space-y-2">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-sm">{doc.document_name}</span>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="h-3 w-3 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Showings */}
+              {showings.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">Recent Showings</h3>
+                  <div className="space-y-2">
+                    {showings.slice(0, 3).map((showing) => (
+                      <div key={showing.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                        <div>
+                          <p className="font-medium">{showing.client_name}</p>
+                          <p className="text-muted-foreground">{new Date(showing.showing_date).toLocaleDateString()}</p>
+                        </div>
+                        <Badge variant="outline">{showing.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Additional Details */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium">Property Type</p>
-                  <p className="text-muted-foreground">{property.type || "Single Family Home"}</p>
+                  <p className="text-muted-foreground">{property.property_type || "residential"}</p>
                 </div>
                 <div>
                   <p className="font-medium">Lot Size</p>
-                  <p className="text-muted-foreground">{property.lotSize || "0.25 acres"}</p>
+                  <p className="text-muted-foreground">{property.lot_size ? `${property.lot_size} sq ft` : "N/A"}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Neighborhood</p>
-                  <p className="text-muted-foreground">{property.neighborhood || "Downtown District"}</p>
+                  <p className="font-medium">City</p>
+                  <p className="text-muted-foreground">{property.city}</p>
                 </div>
                 <div>
                   <p className="font-medium">Listed Date</p>
-                  <p className="text-muted-foreground">{property.listedDate || "Nov 15, 2025"}</p>
+                  <p className="text-muted-foreground">{new Date(property.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
@@ -220,11 +309,51 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
                     <Mail className="h-4 w-4 mr-2" />
                     Email Agent
                   </Button>
-                  <Button variant="outline" className="w-full">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Schedule Tour
+                  <Button variant="outline" className="w-full" onClick={() => setShowScheduleForm(true)}>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Schedule Showing
                   </Button>
                 </div>
+
+                {/* Schedule Showing Form */}
+                {showScheduleForm && (
+                  <form onSubmit={handleScheduleShowing} className="space-y-3 mt-4 p-3 border rounded">
+                    <h4 className="font-medium">Schedule Showing</h4>
+                    <Input
+                      placeholder="Your name"
+                      value={showingForm.client_name}
+                      onChange={(e) => setShowingForm({...showingForm, client_name: e.target.value})}
+                      required
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={showingForm.client_email}
+                      onChange={(e) => setShowingForm({...showingForm, client_email: e.target.value})}
+                    />
+                    <Input
+                      type="tel"
+                      placeholder="Phone"
+                      value={showingForm.client_phone}
+                      onChange={(e) => setShowingForm({...showingForm, client_phone: e.target.value})}
+                    />
+                    <Input
+                      type="datetime-local"
+                      value={showingForm.showing_date}
+                      onChange={(e) => setShowingForm({...showingForm, showing_date: e.target.value})}
+                      required
+                    />
+                    <Textarea
+                      placeholder="Notes (optional)"
+                      value={showingForm.notes}
+                      onChange={(e) => setShowingForm({...showingForm, notes: e.target.value})}
+                    />
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm">Schedule</Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowScheduleForm(false)}>Cancel</Button>
+                    </div>
+                  </form>
+                )}
               </div>
 
               {/* Quick Stats */}
@@ -233,7 +362,7 @@ export function PropertyDetailModal({ property, isOpen, onClose }: PropertyDetai
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Price per sq ft</span>
-                    <span className="font-medium">${(property.price / property.sqft).toFixed(0)}</span>
+                    <span className="font-medium">${property.square_feet ? (property.price / property.square_feet).toFixed(0) : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Days on market</span>

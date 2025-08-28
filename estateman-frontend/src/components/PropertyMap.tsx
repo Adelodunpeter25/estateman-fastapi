@@ -4,20 +4,18 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from "@/components/ui/card";
 
 interface Property {
-  id: string;
+  id: number;
   address: string;
   city: string;
   price: number;
-  beds: number;
-  baths: number;
-  sqft: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  square_feet?: number;
   status: string;
-  type: string;
-  agent: string;
-  daysListed: number;
-  images: string[];
-  virtual_tour: boolean;
-  coordinates: { lat: number; lng: number };
+  property_type: string;
+  latitude?: number;
+  longitude?: number;
+  created_at: string;
 }
 
 interface PropertyMapProps {
@@ -44,12 +42,15 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
 
     // Add markers for each property
     properties.forEach((property) => {
+      // Skip properties without coordinates
+      if (!property.latitude || !property.longitude) return;
+
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
         <div class="p-2">
           <h3 class="font-bold">${property.address}</h3>
           <p class="text-sm text-gray-600">${property.city}</p>
           <p class="font-semibold text-green-600">$${property.price.toLocaleString()}</p>
-          <p class="text-xs">${property.beds} bed • ${property.baths} bath • ${property.sqft} sqft</p>
+          <p class="text-xs">${property.bedrooms || 0} bed • ${property.bathrooms || 0} bath • ${property.square_feet?.toLocaleString() || 'N/A'} sqft</p>
           <p class="text-xs mt-1">
             <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
               ${property.status}
@@ -59,10 +60,10 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       `);
 
       const marker = new mapboxgl.Marker({
-        color: property.status === 'Active' ? '#10B981' : 
-               property.status === 'Pending' ? '#F59E0B' : '#6B7280'
+        color: property.status === 'active' ? '#10B981' : 
+               property.status === 'pending' ? '#F59E0B' : '#6B7280'
       })
-        .setLngLat([property.coordinates.lng, property.coordinates.lat])
+        .setLngLat([property.longitude, property.latitude])
         .setPopup(popup)
         .addTo(map.current!);
 

@@ -171,3 +171,114 @@ class AuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Lead Management Schemas
+class LeadCreate(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    source: str
+    status: str = "cold"
+    score: int = 0
+
+class LeadResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: Optional[str]
+    source: str
+    status: str
+    score: int
+    realtor_id: int
+    created_at: datetime
+
+# Network/MLM Schemas
+class NetworkStats(BaseModel):
+    total_network: int
+    direct_referrals: int
+    network_depth: int
+    monthly_team_commission: float
+
+class NetworkMember(BaseModel):
+    id: int
+    name: str
+    realtor_id: str
+    level: str
+    direct_referrals: int
+    monthly_commission: float
+    join_date: str
+
+# Marketing Schemas
+class MarketingMaterial(BaseModel):
+    id: int
+    name: str
+    type: str
+    size: str
+    downloads: int
+    url: str
+
+class CampaignCreate(BaseModel):
+    name: str
+    type: str
+    target_audience: str
+    content: str
+
+class CampaignResponse(BaseModel):
+    id: int
+    name: str
+    type: str
+    status: str
+    responses: int
+    sent: int
+    created_at: datetime
+
+# Event Schemas
+class EventResponse(BaseModel):
+    id: int
+    title: str
+    date: str
+    time: str
+    location: str
+    type: str
+    description: Optional[str]
+
+# Leaderboard Schemas
+class LeaderboardEntry(BaseModel):
+    rank: int
+    name: str
+    realtor_id: str
+    commission: float
+    clients: int
+    level: str
+
+# Enhanced Profile Schemas
+class RealtorProfile(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: Optional[str]
+    level: str
+    status: str
+    rating: float
+    bio: Optional[str]
+    specialties: List[str]
+    achievements: List[str]
+    total_clients: int
+    active_deals: int
+    total_commissions: float
+    monthly_target: float
+    monthly_earned: float
+
+class ClientPortfolio(BaseModel):
+    id: int
+    name: str
+    email: str
+    status: str
+    stage: str
+    value: float
+    last_contact: str
+
+class ActivityLog(BaseModel):
+    date: str
+    activity: str
+    type: str

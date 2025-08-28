@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Home, MapPin, DollarSign, Calendar, Bed, Bath, Square, Search, Filter, Plus, Eye, Edit, Trash2, Grid3X3, List, Map as MapIcon, Camera, TreePine, Building2, Loader2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Home, MapPin, DollarSign, Calendar, Bed, Bath, Square, Search, Filter, Plus, Eye, Edit, Trash2, Grid3X3, List, Map as MapIcon, Camera, TreePine, Building2, Loader2, Upload, FileText, Clock } from "lucide-react"
 import PropertyMap from "@/components/PropertyMap"
 import { PropertyDetailModal } from "@/components/PropertyDetailModal"
+import { PropertyCreateModal } from "@/components/PropertyCreateModal"
 import { propertiesService, type Property, type PropertyFilters } from "@/services/properties"
 
 const Properties = () => {
@@ -20,6 +22,12 @@ const Properties = () => {
   const [showPropertyModal, setShowPropertyModal] = useState(false)
   const [filters, setFilters] = useState<PropertyFilters>({})
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedProperties, setSelectedProperties] = useState<number[]>([])
+  const [showBulkImport, setShowBulkImport] = useState(false)
+  const [showComparison, setShowComparison] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [mapProperties, setMapProperties] = useState<Property[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchProperties()
@@ -85,6 +93,106 @@ const Properties = () => {
     }
   }
 
+  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      setLoading(true)
+      const result = await propertiesService.bulkImportProperties(file)
+      alert(`Import completed: ${result.created_count} properties created, ${result.failed_count} failed`)
+      fetchProperties()
+    } catch (error) {
+      console.error('Bulk import failed:', error)
+      alert('Bulk import failed')
+    } finally {
+      setLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePropertySelection = (propertyId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedProperties(prev => [...prev, propertyId])
+    } else {
+      setSelectedProperties(prev => prev.filter(id => id !== propertyId))
+    }
+  }
+
+  const handleCompareProperties = async () => {
+    if (selectedProperties.length < 2) {
+      alert('Please select at least 2 properties to compare')
+      return
+    }
+    
+    try {
+      const comparison = await propertiesService.compareProperties(selectedProperties)
+      setShowComparison(true)
+    } catch (error) {
+      console.error('Comparison failed:', error)
+    }
+  }
+
+  const handleToolAction = async (toolType: string) => {
+    if (selectedProperties.length !== 1) {
+      alert('Please select exactly one property to use tools')
+      return
+    }
+
+    const propertyId = selectedProperties[0]
+    
+    try {
+      setLoading(true)
+      let result
+      
+      switch (toolType) {
+        case 'cma':
+          result = await propertiesService.generateCMA(propertyId)
+          break
+        case 'virtual-tour':
+          result = await propertiesService.createVirtualTour(propertyId)
+          break
+        case 'market-report':
+          result = await propertiesService.generateMarketReport(propertyId)
+          break
+        case 'enhance-photos':
+          result = await propertiesService.enhancePhotos(propertyId)
+          break
+        case 'optimize-listing':
+          result = await propertiesService.optimizeListing(propertyId)
+          break
+        case 'social-media-kit':
+          result = await propertiesService.createSocialMediaKit(propertyId)
+          break
+        default:
+          throw new Error('Unknown tool type')
+      }
+      
+      alert(`${toolType.replace('-', ' ')} completed successfully!`)
+      console.log('Tool result:', result)
+    } catch (error) {
+      console.error(`${toolType} failed:`, error)
+      alert(`${toolType.replace('-', ' ')} failed`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchMapData = async () => {
+    try {
+      const mapData = await propertiesService.getPropertiesMapData()
+      setMapProperties(mapData)
+    } catch (error) {
+      console.error('Failed to fetch map data:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (viewMode === 'map') {
+      fetchMapData()
+    }
+  }, [viewMode])
+
 
   
 
@@ -141,10 +249,28 @@ const Properties = () => {
             <h1 className="text-3xl font-bold">Property Management</h1>
             <p className="text-muted-foreground">Comprehensive property listing and management system</p>
           </div>
-          <Button className="flex items-center space-x-2">
-            <Plus className="w-4 h-4" />
-            <span>Add Property</span>
-          </Button>
+          <div className="flex items-center space-x-2">
+            {selectedProperties.length > 1 && (
+              <Button variant="outline" onClick={handleCompareProperties}>
+                Compare ({selectedProperties.length})
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button className="flex items-center space-x-2" onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4" />
+              <span>Add Property</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleBulkImport}
+              className="hidden"
+            />
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -304,6 +430,18 @@ const Properties = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedProperties.length === properties.length && properties.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProperties(properties.map(p => p.id))
+                              } else {
+                                setSelectedProperties([])
+                              }
+                            }}
+                          />
+                        </TableHead>
                         <TableHead>Property</TableHead>
                         <TableHead>Details</TableHead>
                         <TableHead>Price</TableHead>
@@ -324,6 +462,12 @@ const Properties = () => {
                       ) : (
                         properties.map((property) => (
                         <TableRow key={property.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedProperties.includes(property.id)}
+                              onCheckedChange={(checked) => handlePropertySelection(property.id, !!checked)}
+                            />
+                          </TableCell>
                           <TableCell>
                             <div>
                               <div className="font-medium">{property.address}</div>
@@ -453,7 +597,7 @@ const Properties = () => {
 
           <TabsContent value="map" className="space-y-6">
             <PropertyMap 
-              properties={properties} 
+              properties={mapProperties.length > 0 ? mapProperties : properties} 
               onPropertySelect={(property) => handlePropertyView(property)}
             />
           </TabsContent>
@@ -681,7 +825,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">Generate detailed market comparisons for property valuations.</p>
-                  <Button className="w-full">Generate CMA</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('cma')}>Generate CMA</Button>
                 </CardContent>
               </Card>
 
@@ -692,7 +836,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">Upload photos and create 360° virtual tours for listings.</p>
-                  <Button className="w-full">Create Tour</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('virtual-tour')}>Create Tour</Button>
                 </CardContent>
               </Card>
 
@@ -703,7 +847,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">Generate comprehensive market reports for clients.</p>
-                  <Button className="w-full">Generate Report</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('market-report')}>Generate Report</Button>
                 </CardContent>
               </Card>
 
@@ -714,7 +858,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">Automatically enhance property photos for better presentation.</p>
-                  <Button className="w-full">Enhance Photos</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('enhance-photos')}>Enhance Photos</Button>
                 </CardContent>
               </Card>
 
@@ -725,7 +869,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">AI-generated listing descriptions that attract more buyers.</p>
-                  <Button className="w-full">Optimize Listing</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('optimize-listing')}>Optimize Listing</Button>
                 </CardContent>
               </Card>
 
@@ -736,7 +880,7 @@ const Properties = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">Create social media posts and marketing materials automatically.</p>
-                  <Button className="w-full">Create Kit</Button>
+                  <Button className="w-full" onClick={() => handleToolAction('social-media-kit')}>Create Kit</Button>
                 </CardContent>
               </Card>
             </div>
@@ -748,6 +892,12 @@ const Properties = () => {
         property={selectedProperty}
         isOpen={showPropertyModal}
         onClose={() => setShowPropertyModal(false)}
+      />
+      
+      <PropertyCreateModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={fetchProperties}
       />
     </DashboardLayout>
   )

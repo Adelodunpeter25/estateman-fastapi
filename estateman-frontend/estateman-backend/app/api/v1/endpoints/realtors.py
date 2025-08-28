@@ -8,7 +8,11 @@ from app.schemas.realtor import (
     RealtorCreate, RealtorUpdate, RealtorResponse,
     CommissionCreate, CommissionResponse, CommissionUpdate,
     TransactionCreate, TransactionResponse,
-    RealtorAnalytics, CommissionAnalytics
+    RealtorAnalytics, CommissionAnalytics,
+    LeadCreate, LeadResponse, NetworkStats, NetworkMember,
+    MarketingMaterial, CampaignCreate, CampaignResponse,
+    EventResponse, LeaderboardEntry, RealtorProfile,
+    ClientPortfolio, ActivityLog
 )
 from app.services.realtor import RealtorService, CommissionService
 
@@ -187,3 +191,157 @@ def update_performance_metrics(
     if not realtor:
         raise HTTPException(status_code=404, detail="Realtor not found")
     return {"message": "Performance metrics updated successfully", "realtor_id": realtor.id}
+
+# Enhanced Profile endpoints
+@router.get("/{realtor_id}/profile")
+def get_realtor_profile(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_profile(realtor_id)
+
+@router.get("/{realtor_id}/clients")
+def get_realtor_clients(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_clients(realtor_id)
+
+@router.get("/{realtor_id}/activities")
+def get_realtor_activities(
+    realtor_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_activities(realtor_id, limit)
+
+# Network/MLM endpoints
+@router.get("/{realtor_id}/network/stats")
+def get_network_stats(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_network_stats(realtor_id)
+
+@router.get("/{realtor_id}/network/downline")
+def get_network_downline(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_network_downline(realtor_id)
+
+@router.get("/{realtor_id}/network/tree")
+def get_network_tree(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_network_tree(realtor_id)
+
+# Lead Management endpoints
+@router.get("/{realtor_id}/leads")
+def get_realtor_leads(
+    realtor_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_leads(realtor_id, skip, limit)
+
+@router.get("/{realtor_id}/leads/stats")
+def get_leads_stats(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_leads_stats(realtor_id)
+
+# Marketing endpoints
+@router.get("/marketing/materials")
+def get_marketing_materials(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_marketing_materials()
+
+@router.get("/{realtor_id}/marketing/campaigns")
+def get_realtor_campaigns(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_campaigns(realtor_id)
+
+# Events endpoints
+@router.get("/events")
+def get_events(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_events()
+
+@router.post("/events/{event_id}/register")
+def register_for_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.register_for_event(current_user.id, event_id)
+
+# Leaderboard endpoints
+@router.get("/leaderboard")
+def get_leaderboard(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_leaderboard(limit)
+
+@router.get("/{realtor_id}/ranking")
+def get_realtor_ranking(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = RealtorService(db)
+    return service.get_realtor_ranking(realtor_id)
+
+# Enhanced Commission endpoints
+@router.get("/{realtor_id}/commissions/history")
+def get_commission_history(
+    realtor_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.get_commission_history(realtor_id, skip, limit)
+
+@router.get("/{realtor_id}/commissions/breakdown")
+def get_commission_breakdown(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.get_commission_breakdown(realtor_id)

@@ -274,30 +274,6 @@ Include responsive frontend components with image galleries.
 - [ ] Bulk import system
 - [ ] Property analytics dashboard
 
-### Task 4.2: Property Valuation System
-**Duration:** 2 days  
-**AI Prompt Template:**
-```
-Build an automated property valuation system:
-1. Comparative Market Analysis (CMA) generator
-2. Automated Valuation Model (AVM) integration
-3. Property valuation history tracking
-4. Market trend analysis integration
-5. Valuation report generation (PDF)
-6. Comparable property suggestion algorithm
-7. Valuation accuracy tracking
-8. Manual appraisal entry and management
-
-Include valuation dashboard and reporting tools.
-```
-
-**Deliverables:**
-- [ ] CMA generation system
-- [ ] AVM integration
-- [ ] Valuation tracking and history
-- [ ] Market analysis integration
-- [ ] PDF report generation
-- [ ] Valuation dashboard
 
 ### Task 4.3: Property Showing Management
 **Duration:** 1.5 days  

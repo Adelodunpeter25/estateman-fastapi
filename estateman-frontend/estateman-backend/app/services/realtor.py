@@ -130,6 +130,298 @@ class RealtorService:
             ]
         }
 
+    def get_realtor_profile(self, realtor_id: int) -> Dict[str, Any]:
+        realtor = self.get_realtor(realtor_id)
+        if not realtor:
+            return {}
+        
+        return {
+            "id": realtor.id,
+            "name": f"{realtor.user.first_name} {realtor.user.last_name}" if realtor.user else "Unknown",
+            "email": realtor.user.email if realtor.user else "",
+            "phone": realtor.user.phone if realtor.user else "",
+            "level": realtor.level.value,
+            "status": realtor.status.value,
+            "rating": realtor.rating,
+            "bio": f"Experienced {realtor.level.value} specializing in {', '.join(realtor.specialties or [])}",
+            "specialties": realtor.specialties or [],
+            "achievements": [],
+            "total_clients": realtor.total_clients,
+            "active_deals": realtor.active_deals,
+            "total_commissions": realtor.total_commissions,
+            "monthly_target": realtor.monthly_target,
+            "monthly_earned": realtor.monthly_earned
+        }
+
+    def get_realtor_clients(self, realtor_id: int) -> List[Dict[str, Any]]:
+        from app.models.client import Client
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return []
+        
+        clients = self.db.query(Client).filter(
+            Client.assigned_agent_id == realtor.user_id
+        ).all()
+        
+        return [
+            {
+                "id": client.client_id or str(client.id),
+                "name": f"{client.first_name} {client.last_name}",
+                "email": client.email,
+                "status": client.status.value,
+                "stage": "Active" if client.status.value == "active" else "Lead",
+                "value": client.total_spent or 0,
+                "last_contact": client.last_contact_date.strftime("%Y-%m-%d") if client.last_contact_date else "N/A"
+            }
+            for client in clients
+        ]
+
+    def get_realtor_activities(self, realtor_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+        from app.models.client import ClientInteraction
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return []
+        
+        interactions = self.db.query(ClientInteraction).filter(
+            ClientInteraction.agent_id == realtor.user_id
+        ).order_by(desc(ClientInteraction.created_at)).limit(limit).all()
+        
+        activities = []
+        for interaction in interactions:
+            activities.append({
+                "date": interaction.created_at.strftime("%Y-%m-%d"),
+                "activity": interaction.subject or f"{interaction.type.value} interaction",
+                "type": interaction.type.value
+            })
+        
+        # Add commission activities
+        recent_commissions = self.db.query(Commission).filter(
+            Commission.realtor_id == realtor_id
+        ).order_by(desc(Commission.created_at)).limit(5).all()
+        
+        for commission in recent_commissions:
+            activities.append({
+                "date": commission.created_at.strftime("%Y-%m-%d"),
+                "activity": f"Commission earned: ${commission.net_commission:,.2f}",
+                "type": "commission"
+            })
+        
+        return sorted(activities, key=lambda x: x["date"], reverse=True)[:limit]
+
+    def get_network_stats(self, realtor_id: int) -> Dict[str, Any]:
+        from app.models.mlm import MLMPartner
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return {"total_network": 0, "direct_referrals": 0, "network_depth": 0, "monthly_team_commission": 0}
+        
+        mlm_partner = self.db.query(MLMPartner).filter(
+            MLMPartner.user_id == realtor.user_id
+        ).first()
+        
+        if not mlm_partner:
+            return {"total_network": 0, "direct_referrals": 0, "network_depth": 0, "monthly_team_commission": 0}
+        
+        return {
+            "total_network": mlm_partner.total_network_size,
+            "direct_referrals": mlm_partner.direct_referrals_count,
+            "network_depth": mlm_partner.network_depth,
+            "monthly_team_commission": mlm_partner.monthly_commission
+        }
+
+    def get_network_downline(self, realtor_id: int) -> List[Dict[str, Any]]:
+        from app.models.mlm import MLMPartner
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return []
+        
+        mlm_partner = self.db.query(MLMPartner).filter(
+            MLMPartner.user_id == realtor.user_id
+        ).first()
+        
+        if not mlm_partner:
+            return []
+        
+        downline = self.db.query(MLMPartner).join(User).filter(
+            MLMPartner.sponsor_id == mlm_partner.id
+        ).all()
+        
+        return [
+            {
+                "id": partner.id,
+                "name": f"{partner.user.first_name} {partner.user.last_name}" if partner.user else "Unknown",
+                "realtor_id": partner.referral_code,
+                "level": partner.level.value,
+                "direct_referrals": partner.direct_referrals_count,
+                "monthly_commission": partner.monthly_commission,
+                "join_date": partner.join_date.strftime("%b %Y") if partner.join_date else "Unknown"
+            }
+            for partner in downline
+        ]
+
+    def get_network_tree(self, realtor_id: int) -> Dict[str, Any]:
+        from app.models.mlm import MLMPartner
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return {"root": None}
+        
+        mlm_partner = self.db.query(MLMPartner).filter(
+            MLMPartner.user_id == realtor.user_id
+        ).first()
+        
+        if not mlm_partner:
+            return {"root": None}
+        
+        def build_tree_node(partner):
+            children = self.db.query(MLMPartner).join(User).filter(
+                MLMPartner.sponsor_id == partner.id
+            ).all()
+            
+            return {
+                "id": partner.id,
+                "name": f"{partner.user.first_name} {partner.user.last_name}" if partner.user else "Unknown",
+                "level": partner.level.value,
+                "children": [build_tree_node(child) for child in children]
+            }
+        
+        return {"root": build_tree_node(mlm_partner)}
+
+    def get_realtor_leads(self, realtor_id: int, skip: int = 0, limit: int = 50) -> List[Dict[str, Any]]:
+        from app.models.client import Lead, Client
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return []
+        
+        leads = self.db.query(Lead).join(Client).filter(
+            Lead.assigned_agent_id == realtor.user_id
+        ).offset(skip).limit(limit).all()
+        
+        return [
+            {
+                "id": lead.id,
+                "name": f"{lead.client.first_name} {lead.client.last_name}",
+                "email": lead.client.email,
+                "score": lead.score,
+                "status": lead.temperature.value.title(),
+                "source": lead.source or "Unknown"
+            }
+            for lead in leads
+        ]
+
+    def get_leads_stats(self, realtor_id: int) -> Dict[str, Any]:
+        from app.models.client import Lead, LeadTemperature, LeadStatus
+        
+        realtor = self.get_realtor(realtor_id)
+        if not realtor or not realtor.user_id:
+            return {"total_leads": 0, "hot_leads": 0, "follow_ups": 0, "converted": 0}
+        
+        total_leads = self.db.query(Lead).filter(
+            Lead.assigned_agent_id == realtor.user_id
+        ).count()
+        
+        hot_leads = self.db.query(Lead).filter(
+            Lead.assigned_agent_id == realtor.user_id,
+            Lead.temperature == LeadTemperature.HOT
+        ).count()
+        
+        follow_ups = self.db.query(Lead).filter(
+            Lead.assigned_agent_id == realtor.user_id,
+            Lead.status.in_([LeadStatus.CONTACTED, LeadStatus.QUALIFIED])
+        ).count()
+        
+        converted = self.db.query(Lead).filter(
+            Lead.assigned_agent_id == realtor.user_id,
+            Lead.status == LeadStatus.CLOSED_WON
+        ).count()
+        
+        return {
+            "total_leads": total_leads,
+            "hot_leads": hot_leads,
+            "follow_ups": follow_ups,
+            "converted": converted
+        }
+
+    def get_marketing_materials(self) -> List[Dict[str, Any]]:
+        from app.models.marketing import MarketingMaterial
+        
+        materials = self.db.query(MarketingMaterial).filter(
+            MarketingMaterial.is_active == True
+        ).all()
+        
+        return [
+            {
+                "id": material.id,
+                "name": material.name,
+                "type": material.file_type.upper(),
+                "size": f"{material.file_size / 1024 / 1024:.1f} MB" if material.file_size else "Unknown",
+                "downloads": material.download_count,
+                "url": material.file_url
+            }
+            for material in materials
+        ]
+
+    def get_realtor_campaigns(self, realtor_id: int) -> List[Dict[str, Any]]:
+        from app.models.marketing import Campaign
+        
+        campaigns = self.db.query(Campaign).filter(
+            Campaign.created_by == realtor_id
+        ).all()
+        
+        return [
+            {
+                "id": campaign.id,
+                "name": campaign.title,
+                "type": campaign.campaign_type.value.title(),
+                "status": campaign.status.value.title(),
+                "responses": campaign.total_conversions,
+                "sent": campaign.total_reach,
+                "created_at": campaign.created_at
+            }
+            for campaign in campaigns
+        ]
+
+    def get_events(self) -> List[Dict[str, Any]]:
+        # No event model exists yet - return empty list
+        return []
+
+    def register_for_event(self, user_id: int, event_id: int) -> Dict[str, str]:
+        # No event model exists yet
+        return {"message": "Event registration not available", "event_id": str(event_id)}
+
+    def get_leaderboard(self, limit: int = 10) -> List[Dict[str, Any]]:
+        top_realtors = self.db.query(Realtor).join(User).order_by(desc(Realtor.total_commissions)).limit(limit).all()
+        
+        return [
+            {
+                "rank": idx + 1,
+                "name": f"{r.user.first_name} {r.user.last_name}" if r.user else "Unknown",
+                "realtor_id": r.realtor_id,
+                "commission": r.total_commissions,
+                "clients": r.total_clients,
+                "level": r.level.value
+            }
+            for idx, r in enumerate(top_realtors)
+        ]
+
+    def get_realtor_ranking(self, realtor_id: int) -> Dict[str, Any]:
+        realtor = self.get_realtor(realtor_id)
+        if not realtor:
+            return {}
+        
+        # Count realtors with higher commissions
+        higher_count = self.db.query(Realtor).filter(Realtor.total_commissions > realtor.total_commissions).count()
+        
+        return {
+            "rank": higher_count + 1,
+            "points_this_month": 2450,
+            "achievement_level": "Elite"
+        }
+
 class CommissionService:
     def __init__(self, db: Session):
         self.db = db
@@ -309,3 +601,50 @@ class CommissionService:
         self.db.commit()
         self.db.refresh(realtor)
         return realtor
+
+    def get_commission_history(self, realtor_id: int, skip: int = 0, limit: int = 20) -> List[Dict[str, Any]]:
+        commissions = self.db.query(Commission).filter(
+            Commission.realtor_id == realtor_id
+        ).order_by(desc(Commission.created_at)).offset(skip).limit(limit).all()
+        
+        return [
+            {
+                "id": c.id,
+                "type": "Direct Referral Commission",
+                "amount": c.net_commission,
+                "date": c.created_at.strftime("%B %Y"),
+                "status": c.status,
+                "sale_price": c.sale_price
+            }
+            for c in commissions
+        ]
+
+    def get_commission_breakdown(self, realtor_id: int) -> Dict[str, Any]:
+        current_month = datetime.utcnow().replace(day=1)
+        last_month = (current_month - timedelta(days=1)).replace(day=1)
+        
+        this_month = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= current_month
+        ).scalar() or 0
+        
+        last_month_amount = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= last_month,
+            Commission.created_at < current_month
+        ).scalar() or 0
+        
+        total_commissions = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id
+        ).scalar() or 0
+        
+        return {
+            "this_month": this_month,
+            "last_month": last_month_amount,
+            "all_time": total_commissions,
+            "breakdown": {
+                "direct_sales": this_month * 0.7,
+                "team_bonuses": this_month * 0.2,
+                "referral_bonuses": this_month * 0.1
+            }
+        }
