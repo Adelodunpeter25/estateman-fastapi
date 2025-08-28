@@ -6,9 +6,12 @@ from app.models.user import User
 from app.schemas.mlm import (
     MLMPartnerCreate, MLMPartnerUpdate, MLMPartnerResponse,
     MLMCommissionResponse, ReferralActivityResponse,
-    MLMTreeNode, MLMAnalytics, TeamPerformance
+    MLMTreeNode, MLMAnalytics, TeamPerformance,
+    CommissionRuleCreate, CommissionRuleResponse,
+    CommissionSimulatorRequest, CommissionSimulatorResponse,
+    CommissionPayoutCreate, CommissionPayoutResponse
 )
-from app.services.mlm import MLMService, MLMCommissionService
+from app.services.mlm import MLMService, MLMCommissionService, AdvancedCommissionService
 
 router = APIRouter()
 
@@ -136,6 +139,64 @@ def get_recent_activities(
     service = MLMCommissionService(db)
     activities = service.get_recent_activities(limit)
     return activities or []
+
+# Advanced Commission endpoints
+@router.post("/commission-rules/", response_model=CommissionRuleResponse)
+def create_commission_rule(
+    rule_data: CommissionRuleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = AdvancedCommissionService(db)
+    rule = service.create_commission_rule(rule_data.dict())
+    return rule
+
+@router.get("/commission-rules/", response_model=List[CommissionRuleResponse])
+def get_commission_rules(
+    active_only: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = AdvancedCommissionService(db)
+    rules = service.get_commission_rules(active_only)
+    return rules or []
+
+@router.post("/commission-simulator/", response_model=CommissionSimulatorResponse)
+def simulate_commission(
+    request: CommissionSimulatorRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = AdvancedCommissionService(db)
+    result = service.simulate_commission(
+        request.partner_id, 
+        request.transaction_amount, 
+        {
+            "scenario_type": request.scenario_type,
+            "new_rank": request.new_rank,
+            "volume_multiplier": request.volume_multiplier
+        }
+    )
+    return result
+
+@router.post("/payouts/", response_model=CommissionPayoutResponse)
+def create_payout(
+    payout_data: CommissionPayoutCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = AdvancedCommissionService(db)
+    payout = service.create_payout(payout_data.dict())
+    return payout
+
+@router.get("/payouts/pending", response_model=List[CommissionPayoutResponse])
+def get_pending_payouts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = AdvancedCommissionService(db)
+    payouts = service.get_pending_payouts()
+    return payouts or []
 
 # Commission structure endpoint
 @router.get("/commission-structure")

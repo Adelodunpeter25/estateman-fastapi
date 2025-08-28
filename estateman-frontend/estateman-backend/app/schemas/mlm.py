@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-from app.models.mlm import PartnerLevel, CommissionType
+from app.models.mlm import PartnerLevel, CommissionType, QualificationStatus, PayoutStatus
 
 class MLMPartnerBase(BaseModel):
     referral_code: Optional[str] = None
@@ -77,6 +77,61 @@ class MLMTreeNode(BaseModel):
     children: List['MLMTreeNode'] = []
     avatar: Optional[str] = None
 
+class CommissionRuleCreate(BaseModel):
+    name: str
+    commission_type: CommissionType
+    level: int
+    percentage: float
+    min_volume: float = 0.0
+    min_rank: Optional[PartnerLevel] = None
+
+class CommissionRuleResponse(BaseModel):
+    id: int
+    name: str
+    commission_type: CommissionType
+    level: int
+    percentage: float
+    min_volume: float
+    min_rank: Optional[PartnerLevel] = None
+    is_active: bool
+    
+    class Config:
+        from_attributes = True
+
+class CommissionSimulatorRequest(BaseModel):
+    partner_id: int
+    transaction_amount: float
+    scenario_type: str  # "current", "rank_up", "volume_increase"
+    new_rank: Optional[PartnerLevel] = None
+    volume_multiplier: Optional[float] = None
+
+class CommissionSimulatorResponse(BaseModel):
+    current_commission: float
+    projected_commission: float
+    difference: float
+    breakdown: List[dict]
+
+class CommissionPayoutCreate(BaseModel):
+    partner_id: int
+    period_start: datetime
+    period_end: datetime
+    total_amount: float
+    notes: Optional[str] = None
+
+class CommissionPayoutResponse(BaseModel):
+    id: int
+    partner_id: int
+    period_start: datetime
+    period_end: datetime
+    total_amount: float
+    status: PayoutStatus
+    approved_at: Optional[datetime] = None
+    paid_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class MLMAnalytics(BaseModel):
     total_partners: int
     total_network_size: int
@@ -84,6 +139,8 @@ class MLMAnalytics(BaseModel):
     conversion_rate: float
     active_partners: int
     network_depth: int
+    total_commission_paid: float
+    pending_payouts: float
 
 class TeamPerformance(BaseModel):
     partner_id: int

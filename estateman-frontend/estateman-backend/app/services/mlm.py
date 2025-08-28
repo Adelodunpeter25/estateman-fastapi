@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional, Dict, Any
-from app.models.mlm import MLMPartner, MLMCommission, ReferralActivity, PartnerLevel, CommissionType
+from app.models.mlm import (
+    MLMPartner, MLMCommission, ReferralActivity, CommissionRule, 
+    CommissionQualification, CommissionPayout, CommissionAdjustment,
+    PartnerLevel, CommissionType, QualificationStatus, PayoutStatus
+)
 from app.models.user import User
 from app.schemas.mlm import MLMPartnerCreate, MLMPartnerUpdate, MLMTreeNode, TeamPerformance
 import random
@@ -181,6 +185,75 @@ class MLMService:
             "conversion_rate": round(conversion_rate, 1),
             "network_depth": max_depth
         }
+
+class AdvancedCommissionService:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def create_commission_rule(self, rule_data: dict) -> CommissionRule:
+        """Create new commission rule"""
+        rule = CommissionRule(**rule_data)
+        self.db.add(rule)
+        self.db.commit()
+        self.db.refresh(rule)
+        return rule
+    
+    def get_commission_rules(self, active_only: bool = True) -> List[CommissionRule]:
+        """Get commission rules"""
+        query = self.db.query(CommissionRule)
+        if active_only:
+            query = query.filter(CommissionRule.is_active == True)
+        return query.all()
+    
+    def simulate_commission(self, partner_id: int, transaction_amount: float, scenario: dict) -> dict:
+        """Simulate commission under different scenarios"""
+        partner = self.db.query(MLMPartner).filter(MLMPartner.id == partner_id).first()
+        if not partner:
+            return {"error": "Partner not found"}
+        
+        # Current commission calculation
+        commission_service = MLMCommissionService(self.db)
+        current_commissions = commission_service.calculate_commission(partner_id, transaction_amount)
+        current_total = sum(c.amount for c in current_commissions)
+        
+        # Projected commission based on scenario
+        if scenario.get("scenario_type") == "rank_up":
+            original_level = partner.level
+            partner.level = scenario.get("new_rank", partner.level)
+            projected_commissions = commission_service.calculate_commission(partner_id, transaction_amount)
+            partner.level = original_level
+        elif scenario.get("scenario_type") == "volume_increase":
+            multiplier = scenario.get("volume_multiplier", 1.0)
+            projected_commissions = commission_service.calculate_commission(partner_id, transaction_amount * multiplier)
+        else:
+            projected_commissions = current_commissions
+        
+        projected_total = sum(c.amount for c in projected_commissions)
+        
+        return {
+            "current_commission": current_total,
+            "projected_commission": projected_total,
+            "difference": projected_total - current_total,
+            "breakdown": [{
+                "level": c.level,
+                "amount": c.amount,
+                "type": c.commission_type.value
+            } for c in projected_commissions]
+        }
+    
+    def create_payout(self, payout_data: dict) -> CommissionPayout:
+        """Create commission payout record"""
+        payout = CommissionPayout(**payout_data)
+        self.db.add(payout)
+        self.db.commit()
+        self.db.refresh(payout)
+        return payout
+    
+    def get_pending_payouts(self) -> List[CommissionPayout]:
+        """Get all pending payouts"""
+        return self.db.query(CommissionPayout).filter(
+            CommissionPayout.status == PayoutStatus.PENDING
+        ).all()
 
 class MLMCommissionService:
     def __init__(self, db: Session):
