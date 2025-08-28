@@ -82,7 +82,7 @@ async def get_property(
     property_service = PropertyService(db)
     property_obj = property_service.get_property_by_id(property_id)
     if not property_obj:
-        raise HTTPException(status_code=404, detail={"message": "No Property Found"})
+        return {"message": "No Property Found"}
     return property_obj
 
 @router.post("/")
@@ -108,7 +108,7 @@ async def update_property(
     property_dict = {k: v for k, v in property_data.dict().items() if v is not None}
     property_obj = property_service.update_property(property_id, property_dict)
     if not property_obj:
-        raise HTTPException(status_code=404, detail={"message": "No Property Found"})
+        return {"message": "No Property Found"}
     return property_obj
 
 @router.delete("/{property_id}")
@@ -120,7 +120,7 @@ async def delete_property(
     property_service = PropertyService(db)
     success = property_service.delete_property(property_id)
     if not success:
-        raise HTTPException(status_code=404, detail={"message": "No Property Found"})
+        return {"message": "No Property Found"}
     return {"message": "Property deleted successfully"}
 
 @router.get("/search/{search_term}")
@@ -142,5 +142,5 @@ async def get_property_analytics(
     property_service = PropertyService(db)
     analytics = property_service.get_property_analytics(property_id)
     if not analytics:
-        raise HTTPException(status_code=404, detail={"message": "No Property Analytics Found"})
+        return {"message": "No Property Analytics Found"}
     return analytics

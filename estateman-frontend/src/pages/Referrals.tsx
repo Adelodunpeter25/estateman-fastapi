@@ -15,89 +15,43 @@ import {
   UserPlus
 } from "lucide-react"
 import { MLMTreeDiagram } from "@/components/MLMTreeDiagram"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { mlmService, type MLMAnalytics, type TeamPerformance, type ReferralActivity, type CommissionStructure } from "@/services/mlm"
 
-const referralData = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    level: "Diamond Partner",
-    directReferrals: 24,
-    totalNetwork: 187,
-    monthlyCommission: 15420,
-    totalEarnings: 287650,
-    status: "Active",
-    joinDate: "Jan 2023",
-    downlineLevel: 4
-  },
-  {
-    id: "2",
-    name: "Mike Chen",
-    level: "Gold Partner",
-    directReferrals: 18,
-    totalNetwork: 143,
-    monthlyCommission: 11280,
-    totalEarnings: 195430,
-    status: "Active",
-    joinDate: "Mar 2023",
-    downlineLevel: 3
-  },
-  {
-    id: "3",
-    name: "Emily Davis",
-    level: "Silver Partner",
-    directReferrals: 12,
-    totalNetwork: 67,
-    monthlyCommission: 6890,
-    totalEarnings: 98760,
-    status: "Active",
-    joinDate: "Jun 2023",
-    downlineLevel: 2
-  },
-  {
-    id: "4",
-    name: "James Wilson",
-    level: "Bronze Partner",
-    directReferrals: 8,
-    totalNetwork: 34,
-    monthlyCommission: 3450,
-    totalEarnings: 42130,
-    status: "Active",
-    joinDate: "Aug 2023",
-    downlineLevel: 2
-  }
-]
 
-const recentReferrals = [
-  {
-    id: "1",
-    referrer: "Sarah Johnson",
-    newMember: "Alex Rodriguez",
-    type: "Direct Referral",
-    bonus: 500,
-    date: "2 hours ago"
-  },
-  {
-    id: "2",
-    referrer: "Mike Chen",
-    newMember: "Jessica Liu",
-    type: "Level 2 Bonus",
-    bonus: 250,
-    date: "5 hours ago"
-  },
-  {
-    id: "3",
-    referrer: "Emily Davis",
-    newMember: "David Park",
-    type: "Direct Referral",
-    bonus: 500,
-    date: "1 day ago"
-  }
-]
 
 const Referrals = () => {
   const [showTreeDialog, setShowTreeDialog] = useState(false)
   const [selectedPartner, setSelectedPartner] = useState<{id: string, name: string} | null>(null)
+  const [analytics, setAnalytics] = useState<MLMAnalytics | null>(null)
+  const [topPerformers, setTopPerformers] = useState<TeamPerformance[]>([])
+  const [recentActivities, setRecentActivities] = useState<ReferralActivity[]>([])
+  const [commissionStructure, setCommissionStructure] = useState<CommissionStructure[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [analyticsData, performersData, activitiesData, structureData] = await Promise.all([
+          mlmService.getMLMAnalytics(),
+          mlmService.getTopPerformers(4),
+          mlmService.getRecentActivities(3),
+          mlmService.getCommissionStructure()
+        ])
+        
+        setAnalytics(analyticsData)
+        setTopPerformers(performersData)
+        setRecentActivities(activitiesData)
+        setCommissionStructure(structureData)
+      } catch (error) {
+        console.error('Error fetching MLM data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const handleViewTree = (partner: {id: string, name: string}) => {
     setSelectedPartner(partner)
@@ -142,8 +96,8 @@ const Referrals = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,247</div>
-              <p className="text-xs text-muted-foreground">+156 this month</p>
+              <div className="text-2xl font-bold">{analytics?.active_partners?.toLocaleString() || '0'}</div>
+              <p className="text-xs text-muted-foreground">Active partners</p>
             </CardContent>
           </Card>
           
@@ -153,8 +107,8 @@ const Referrals = () => {
               <Network className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8,431</div>
-              <p className="text-xs text-muted-foreground">7 levels deep</p>
+              <div className="text-2xl font-bold">{analytics?.total_network_size?.toLocaleString() || '0'}</div>
+              <p className="text-xs text-muted-foreground">{analytics?.network_depth || 0} levels deep</p>
             </CardContent>
           </Card>
 
@@ -164,8 +118,8 @@ const Referrals = () => {
               <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">$487K</div>
-              <p className="text-xs text-muted-foreground">+23.4% vs last month</p>
+              <div className="text-2xl font-bold text-success">${analytics?.monthly_referral_bonus ? (analytics.monthly_referral_bonus / 1000).toFixed(0) + 'K' : '0'}</div>
+              <p className="text-xs text-muted-foreground">Monthly bonus</p>
             </CardContent>
           </Card>
 
@@ -175,8 +129,8 @@ const Referrals = () => {
               <TrendingUp className="h-4 w-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gold">67.8%</div>
-              <p className="text-xs text-muted-foreground">Referral to partner</p>
+              <div className="text-2xl font-bold text-gold">{analytics?.conversion_rate || 0}%</div>
+              <p className="text-xs text-muted-foreground">Conversion rate</p>
             </CardContent>
           </Card>
         </div>
@@ -192,14 +146,14 @@ const Referrals = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {referralData.map((partner, index) => (
-                  <div key={partner.id} className="p-4 border rounded-lg">
+                {topPerformers.map((partner, index) => (
+                  <div key={partner.partner_id} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <Avatar className="h-10 w-10">
                             <AvatarFallback>
-                              {partner.name.split(' ').map(n => n[0]).join('')}
+                              {partner.partner_name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           {index < 3 && (
@@ -212,9 +166,9 @@ const Referrals = () => {
                           )}
                         </div>
                         <div>
-                          <h4 className="font-medium">{partner.name}</h4>
+                          <h4 className="font-medium">{partner.partner_name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            Member since {partner.joinDate}
+                            Member since {partner.join_date}
                           </p>
                         </div>
                       </div>
@@ -226,34 +180,34 @@ const Referrals = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Direct Referrals</p>
-                        <p className="font-semibold">{partner.directReferrals}</p>
+                        <p className="font-semibold">{partner.direct_referrals}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Total Network</p>
-                        <p className="font-semibold">{partner.totalNetwork}</p>
+                        <p className="font-semibold">{partner.total_network}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Monthly Commission</p>
                         <p className="font-semibold text-success">
-                          ${partner.monthlyCommission.toLocaleString()}
+                          ${partner.monthly_commission.toLocaleString()}
                         </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Total Earnings</p>
                         <p className="font-semibold text-primary">
-                          ${partner.totalEarnings.toLocaleString()}
+                          ${partner.total_earnings.toLocaleString()}
                         </p>
                       </div>
                     </div>
                     
                     <div className="mt-3 flex justify-between items-center">
                       <div className="text-sm text-muted-foreground">
-                        Network Depth: {partner.downlineLevel} levels
+                        Network Depth: {partner.downline_level} levels
                       </div>
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => handleViewTree({id: partner.id, name: partner.name})}
+                        onClick={() => handleViewTree({id: partner.partner_id.toString(), name: partner.partner_name})}
                       >
                         View Tree
                         <ChevronRight className="h-3 w-3 ml-1" />
@@ -272,7 +226,7 @@ const Referrals = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentReferrals.map((referral) => (
+                {recentActivities.map((referral) => (
                   <div key={referral.id} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium">New Referral Bonus</h4>
@@ -302,26 +256,13 @@ const Referrals = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center p-4 border rounded-lg">
-                <h4 className="font-semibold text-lg mb-2">Level 1</h4>
-                <p className="text-2xl font-bold text-primary mb-1">15%</p>
-                <p className="text-sm text-muted-foreground">Direct Referrals</p>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <h4 className="font-semibold text-lg mb-2">Level 2</h4>
-                <p className="text-2xl font-bold text-primary mb-1">7%</p>
-                <p className="text-sm text-muted-foreground">Second Level</p>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <h4 className="font-semibold text-lg mb-2">Level 3</h4>
-                <p className="text-2xl font-bold text-primary mb-1">3%</p>
-                <p className="text-sm text-muted-foreground">Third Level</p>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <h4 className="font-semibold text-lg mb-2">Levels 4-7</h4>
-                <p className="text-2xl font-bold text-primary mb-1">1%</p>
-                <p className="text-sm text-muted-foreground">Deep Network</p>
-              </div>
+              {commissionStructure.map((structure, index) => (
+                <div key={index} className="text-center p-4 border rounded-lg">
+                  <h4 className="font-semibold text-lg mb-2">Level {structure.level}</h4>
+                  <p className="text-2xl font-bold text-primary mb-1">{structure.percentage}%</p>
+                  <p className="text-sm text-muted-foreground">{structure.description}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

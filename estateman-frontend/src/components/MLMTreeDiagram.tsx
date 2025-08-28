@@ -1,118 +1,23 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Users, DollarSign, Minus, Plus } from "lucide-react"
+import { mlmService, type MLMTreeNode as APITreeNode } from "@/services/mlm"
 
 interface TreeNode {
   id: string
   name: string
   level: string
-  referralId: string
-  directReferrals: number
-  monthlyCommission: number
+  referral_id: string
+  direct_referrals: number
+  monthly_commission: number
   children: TreeNode[]
   avatar?: string
 }
 
-const sampleTreeData: TreeNode = {
-  id: "1",
-  name: "Sarah Johnson",
-  level: "Diamond Partner",
-  referralId: "SJ2025001",
-  directReferrals: 24,
-  monthlyCommission: 15420,
-  avatar: "/placeholder.svg",
-  children: [
-    {
-      id: "2",
-      name: "Mike Chen",
-      level: "Gold Partner", 
-      referralId: "MC2025002",
-      directReferrals: 18,
-      monthlyCommission: 11280,
-      children: [
-        {
-          id: "4",
-          name: "James Wilson",
-          level: "Bronze Partner",
-          referralId: "JW2025004", 
-          directReferrals: 8,
-          monthlyCommission: 3450,
-          children: [
-            {
-              id: "7",
-              name: "Lisa Park",
-              level: "Associate",
-              referralId: "LP2025007",
-              directReferrals: 3,
-              monthlyCommission: 850,
-              children: []
-            },
-            {
-              id: "8", 
-              name: "Tom Lee",
-              level: "Associate",
-              referralId: "TL2025008",
-              directReferrals: 2,
-              monthlyCommission: 650,
-              children: []
-            }
-          ]
-        },
-        {
-          id: "5",
-          name: "Anna Kim",
-          level: "Silver Partner",
-          referralId: "AK2025005",
-          directReferrals: 12,
-          monthlyCommission: 6890,
-          children: [
-            {
-              id: "9",
-              name: "David Liu",
-              level: "Associate", 
-              referralId: "DL2025009",
-              directReferrals: 5,
-              monthlyCommission: 1250,
-              children: []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "3",
-      name: "Emily Davis",
-      level: "Silver Partner",
-      referralId: "ED2025003",
-      directReferrals: 12,
-      monthlyCommission: 6890,
-      children: [
-        {
-          id: "6",
-          name: "Robert Taylor",
-          level: "Bronze Partner",
-          referralId: "RT2025006",
-          directReferrals: 6,
-          monthlyCommission: 2340,
-          children: [
-            {
-              id: "10",
-              name: "Maria Garcia",
-              level: "Associate",
-              referralId: "MG2025010",
-              directReferrals: 1,
-              monthlyCommission: 320,
-              children: []
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+
 
 interface MLMTreeDiagramProps {
   isOpen: boolean
@@ -153,7 +58,7 @@ const TreeNodeComponent = ({ node, level = 0 }: { node: TreeNode; level?: number
             </Avatar>
             <div>
               <h4 className="font-medium text-sm">{node.name}</h4>
-              <p className="text-xs text-muted-foreground">ID: {node.referralId}</p>
+              <p className="text-xs text-muted-foreground">ID: {node.referral_id}</p>
             </div>
           </div>
           {node.children.length > 0 && (
@@ -175,11 +80,11 @@ const TreeNodeComponent = ({ node, level = 0 }: { node: TreeNode; level?: number
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-1">
             <Users className="h-3 w-3 text-muted-foreground" />
-            <span>{node.directReferrals}</span>
+            <span>{node.direct_referrals}</span>
           </div>
           <div className="flex items-center gap-1">
             <DollarSign className="h-3 w-3 text-success" />
-            <span className="text-success">${node.monthlyCommission.toLocaleString()}</span>
+            <span className="text-success">${node.monthly_commission.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -221,6 +126,62 @@ const TreeNodeComponent = ({ node, level = 0 }: { node: TreeNode; level?: number
 }
 
 export function MLMTreeDiagram({ isOpen, onClose, partnerId, partnerName }: MLMTreeDiagramProps) {
+  const [treeData, setTreeData] = useState<TreeNode | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (isOpen && partnerId) {
+      fetchTreeData()
+    }
+  }, [isOpen, partnerId])
+
+  const fetchTreeData = async () => {
+    if (!partnerId) return
+    
+    setLoading(true)
+    try {
+      const data = await mlmService.getMLMTree(parseInt(partnerId))
+      // Convert API response to component format
+      const convertNode = (node: APITreeNode): TreeNode => ({
+        id: node.id,
+        name: node.name,
+        level: node.level,
+        referral_id: node.referral_id,
+        direct_referrals: node.direct_referrals,
+        monthly_commission: node.monthly_commission,
+        children: node.children.map(convertNode),
+        avatar: node.avatar
+      })
+      setTreeData(convertNode(data))
+    } catch (error) {
+      console.error('Error fetching MLM tree:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calculateNetworkStats = (node: TreeNode): { size: number, depth: number, totalCommission: number, totalEarnings: number } => {
+    let size = 1
+    let maxDepth = 0
+    let totalCommission = node.monthly_commission
+    let totalEarnings = node.monthly_commission * 12 // Estimate annual
+
+    const traverse = (n: TreeNode, currentDepth: number) => {
+      maxDepth = Math.max(maxDepth, currentDepth)
+      n.children.forEach(child => {
+        size++
+        totalCommission += child.monthly_commission
+        totalEarnings += child.monthly_commission * 12
+        traverse(child, currentDepth + 1)
+      })
+    }
+
+    node.children.forEach(child => traverse(child, 1))
+    return { size, depth: maxDepth, totalCommission, totalEarnings }
+  }
+
+  const stats = treeData ? calculateNetworkStats(treeData) : null
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] max-h-[90vh] overflow-auto">
@@ -231,31 +192,45 @@ export function MLMTreeDiagram({ isOpen, onClose, partnerId, partnerName }: MLMT
         </DialogHeader>
         
         <div className="p-6 overflow-auto">
-          <div className="flex justify-center">
-            <TreeNodeComponent node={sampleTreeData} />
-          </div>
-          
-          <div className="mt-8 p-4 bg-muted/50 rounded-lg">
-            <h4 className="font-medium mb-2">Network Statistics</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground">Total Network Size</p>
-                <p className="font-semibold">187 members</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Network Depth</p>
-                <p className="font-semibold">4 levels</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Monthly Commission</p>
-                <p className="font-semibold text-success">$37,840</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Total Earnings</p>
-                <p className="font-semibold text-primary">$287,650</p>
-              </div>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-muted-foreground">Loading network tree...</div>
             </div>
-          </div>
+          ) : treeData ? (
+            <>
+              <div className="flex justify-center">
+                <TreeNodeComponent node={treeData} />
+              </div>
+              
+              {stats && (
+                <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2">Network Statistics</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Total Network Size</p>
+                      <p className="font-semibold">{stats.size} members</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Network Depth</p>
+                      <p className="font-semibold">{stats.depth} levels</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Monthly Commission</p>
+                      <p className="font-semibold text-success">${stats.totalCommission.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Est. Annual Earnings</p>
+                      <p className="font-semibold text-primary">${stats.totalEarnings.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex justify-center items-center h-64">
+              <div className="text-muted-foreground">No network data available</div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -4,7 +4,7 @@ from .api.v1.endpoints import auth
 from .core.database import engine, Base
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .models import user, permission, audit, navigation, dashboard, property, client, realtor
+from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -40,6 +40,10 @@ app.include_router(clients.router, prefix="/api/v1/clients", tags=["clients"])
 # Import and include Realtors router
 from .api.v1.endpoints import realtors
 app.include_router(realtors.router, prefix="/api/v1/realtors", tags=["realtors"])
+
+# Import and include MLM router
+from .api.v1.endpoints import mlm
+app.include_router(mlm.router, prefix="/api/v1/mlm", tags=["mlm"])
 
 @app.get("/")
 async def root():
