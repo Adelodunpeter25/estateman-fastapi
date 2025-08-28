@@ -1,7 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
+from pydantic import ValidationError
 from .api.v1.endpoints import auth
 from .core.database import engine, Base
+from .core.exceptions import (
+    AppException, app_exception_handler, validation_exception_handler,
+    sqlalchemy_exception_handler, general_exception_handler
+)
 
 # Import all models to ensure they are registered with SQLAlchemy
 from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm
@@ -10,6 +16,12 @@ from .models import user, permission, audit, navigation, dashboard, property, cl
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Estateman API", version="1.0.0")
+
+# Add exception handlers
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(ValidationError, validation_exception_handler)
+app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,

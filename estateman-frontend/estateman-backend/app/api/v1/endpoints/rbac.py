@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ....core.database import get_db
+from ....core.validation import validate_id, sanitize_string
+from ....core.exceptions import NotFoundError, ValidationException
 from ....services.rbac import RBACService
 from ....schemas.rbac import (
     PermissionCreate, PermissionUpdate, PermissionResponse,
@@ -39,6 +41,7 @@ async def update_permission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
+    permission_id = validate_id(permission_id)
     rbac_service = RBACService(db)
     return rbac_service.update_permission(permission_id, permission_data, current_user)
 
@@ -48,12 +51,10 @@ async def delete_permission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
+    permission_id = validate_id(permission_id)
     permission = db.query(Permission).filter(Permission.id == permission_id).first()
     if not permission:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Permission not found"
-        )
+        raise NotFoundError("Permission")
     
     db.delete(permission)
     db.commit()
@@ -90,13 +91,11 @@ async def get_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
+    role_id = validate_id(role_id)
     rbac_service = RBACService(db)
     role = rbac_service.get_role_with_inherited_permissions(role_id)
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Role not found"
-        )
+        raise NotFoundError("Role")
     
     # Separate inherited permissions
     all_permissions = rbac_service.get_all_permissions_for_role(role)
@@ -111,6 +110,7 @@ async def update_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
+    role_id = validate_id(role_id)
     rbac_service = RBACService(db)
     return rbac_service.update_role(role_id, role_data, current_user)
 
@@ -120,12 +120,10 @@ async def delete_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
+    role_id = validate_id(role_id)
     role = db.query(Role).filter(Role.id == role_id).first()
     if not role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Role not found"
-        )
+        raise NotFoundError("Role")
     
     # Check if role is assigned to any users
     users_with_role = db.query(User).filter(User.role_id == role_id).count()
@@ -169,6 +167,8 @@ async def check_permission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    resource = sanitize_string(resource, 100)
+    action = sanitize_string(action, 100)
     rbac_service = RBACService(db)
     has_permission = rbac_service.check_permission_with_inheritance(current_user, resource, action)
     return {"has_permission": has_permission}
@@ -183,7 +183,7 @@ async def get_user_permissions(
         return {"permissions": []}
     
     role = db.query(Role).filter(Role.id == current_user.role_id).first()
-    if not role:
+    if role is None:
         return {"permissions": []}
     
     rbac_service = RBACService(db)
@@ -212,7 +212,7 @@ async def get_user_permission_names(
         return {"permissions": []}
     
     role = db.query(Role).filter(Role.id == current_user.role_id).first()
-    if not role:
+    if role is None:
         return {"permissions": []}
     
     rbac_service = RBACService(db)
@@ -240,7 +240,7 @@ async def get_navigation_config(
         return {"navigation": []}
     
     role = db.query(Role).filter(Role.id == current_user.role_id).first()
-    if not role:
+    if role is None:
         return {"navigation": []}
     
     rbac_service = RBACService(db)

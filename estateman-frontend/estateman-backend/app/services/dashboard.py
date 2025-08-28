@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from ..models.user import User, UserRole
 from ..models.dashboard import DashboardMetrics, RecentActivity
+from ..core.datetime_utils import utc_now, ensure_timezone_aware
+from ..core.validation import sanitize_html
 from typing import Dict, List, Any
 from datetime import datetime, timedelta
 
@@ -36,7 +38,7 @@ class DashboardService:
                 DashboardMetrics.metric_name == name
             ).first()
             
-            if metric:
+            if metric is not None:
                 metrics[name] = {
                     "value": self._format_metric_value(name, metric.metric_value),
                     "change": metric.metric_change or 0,
@@ -58,9 +60,9 @@ class DashboardService:
         return [
             {
                 "id": activity.id,
-                "user_name": activity.user_name,
-                "action": activity.action,
-                "description": activity.description,
+                "user_name": sanitize_html(activity.user_name or ""),
+                "action": sanitize_html(activity.action or ""),
+                "description": sanitize_html(activity.description or ""),
                 "timestamp": self._format_timestamp(activity.timestamp),
                 "activity_type": activity.activity_type,
                 "amount": activity.amount
@@ -107,7 +109,7 @@ class DashboardService:
         revenue_data = []
         
         for i in range(12):
-            month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+            month_start = utc_now().replace(day=1) - timedelta(days=30*i)
             month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
             
             # Count sales activities
@@ -144,8 +146,8 @@ class DashboardService:
         return [
             {
                 "id": activity.id,
-                "title": activity.action,
-                "message": activity.description,
+                "title": sanitize_html(activity.action or ""),
+                "message": sanitize_html(activity.description or ""),
                 "time": self._format_timestamp(activity.timestamp)
             }
             for activity in notifications
@@ -153,7 +155,8 @@ class DashboardService:
     
     def _format_timestamp(self, timestamp: datetime) -> str:
         """Format timestamp to relative time"""
-        now = datetime.utcnow()
+        now = utc_now()
+        timestamp = ensure_timezone_aware(timestamp)
         diff = now - timestamp
         
         if diff.days > 0:

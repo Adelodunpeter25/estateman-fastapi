@@ -42,8 +42,9 @@ def create_superadmin():
         
         print("✅ Superadmin account created successfully!")
         print(f"   Email: admin@estateman.com")
-        print(f"   Password: admin123")
+        print(f"   Password: [HIDDEN FOR SECURITY]")
         print(f"   Role: {superadmin_user.role}")
+        print(f"   Note: Default password is 'admin123' - change after first login")
         
     except Exception as e:
         db.rollback()

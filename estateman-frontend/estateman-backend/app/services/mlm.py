@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional, Dict, Any
+from app.core.datetime_utils import utc_now, ensure_timezone_aware
+from app.core.validation import sanitize_html, validate_id
+from app.core.exceptions import NotFoundError, ValidationException, UnauthorizedError
 from app.models.mlm import (
     MLMPartner, MLMCommission, ReferralActivity, CommissionRule, 
     CommissionQualification, CommissionPayout, CommissionAdjustment,
@@ -50,6 +53,7 @@ class MLMService:
     
     def get_partner(self, partner_id: int) -> Optional[MLMPartner]:
         """Get MLM partner by ID"""
+        partner_id = validate_id(partner_id)
         return self.db.query(MLMPartner).filter(MLMPartner.id == partner_id).first()
     
     def get_partner_by_user_id(self, user_id: int) -> Optional[MLMPartner]:
@@ -97,7 +101,7 @@ class MLMService:
             
             return MLMTreeNode(
                 id=str(p.id),
-                name=user.full_name if user else f"Partner {p.id}",
+                name=sanitize_html(user.full_name if user else f"Partner {p.id}"),
                 level=p.level.value,
                 referral_id=p.referral_code,
                 direct_referrals=p.direct_referrals_count,
@@ -148,13 +152,13 @@ class MLMService:
             user = self.db.query(User).filter(User.id == partner.user_id).first()
             result.append(TeamPerformance(
                 partner_id=partner.id,
-                partner_name=user.full_name if user else f"Partner {partner.id}",
+                partner_name=sanitize_html(user.full_name if user else f"Partner {partner.id}"),
                 level=partner.level.value,
                 direct_referrals=partner.direct_referrals_count,
                 total_network=partner.total_network_size,
                 monthly_commission=partner.monthly_commission,
                 total_earnings=partner.total_earnings,
-                join_date=partner.join_date.strftime("%b %Y"),
+                join_date=ensure_timezone_aware(partner.join_date).strftime("%b %Y"),
                 downline_level=partner.network_depth
             ))
         
@@ -329,8 +333,8 @@ class MLMCommissionService:
             
             result.append({
                 "id": str(activity.id),
-                "referrer": referrer_user.full_name if referrer_user else "Unknown",
-                "newMember": referred_user.full_name if referred_user else "Unknown",
+                "referrer": sanitize_html(referrer_user.full_name if referrer_user else "Unknown"),
+                "newMember": sanitize_html(referred_user.full_name if referred_user else "Unknown"),
                 "type": activity.activity_type.replace("_", " ").title(),
                 "bonus": int(activity.amount),
                 "date": self._format_time_ago(activity.created_at)
@@ -340,7 +344,8 @@ class MLMCommissionService:
     
     def _format_time_ago(self, dt: datetime) -> str:
         """Format datetime as time ago string"""
-        now = datetime.utcnow()
+        now = utc_now()
+        dt = ensure_timezone_aware(dt)
         diff = now - dt
         
         if diff.days > 0:

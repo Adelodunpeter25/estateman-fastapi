@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
+import secrets
 
 class Settings(BaseSettings):
     DB_HOST: str
@@ -8,7 +10,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     DB_NAME: str
     
-    SECRET_KEY: str = "your-secret-key-change-in-production-estateman-2025"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

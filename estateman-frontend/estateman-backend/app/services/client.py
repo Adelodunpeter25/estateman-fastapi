@@ -3,6 +3,9 @@ from sqlalchemy import and_, or_, func, desc
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import uuid
+from app.core.datetime_utils import utc_now, ensure_timezone_aware
+from app.core.validation import sanitize_html, validate_id, validate_email, validate_phone
+from app.core.exceptions import NotFoundError, ValidationException
 from app.models.client import (
     Client, Lead, ClientInteraction, LoyaltyTransaction, 
     LeadSource, ClientSegment, ClientStatus, LeadStatus, LeadTemperature
@@ -64,7 +67,7 @@ class ClientService:
         for field, value in client_data.dict(exclude_unset=True).items():
             setattr(client, field, value)
         
-        client.updated_at = datetime.utcnow()
+        client.updated_at = utc_now()
         self.db.commit()
         self.db.refresh(client)
         
@@ -97,7 +100,7 @@ class ClientService:
         recent_interactions = self.db.query(ClientInteraction).filter(
             and_(
                 ClientInteraction.client_id == client_id,
-                ClientInteraction.created_at >= datetime.utcnow() - timedelta(days=30)
+                ClientInteraction.created_at >= utc_now() - timedelta(days=30)
             )
         ).count()
         score += min(recent_interactions * 5, 30)
@@ -195,7 +198,7 @@ class LeadService:
         for field, value in lead_data.dict(exclude_unset=True).items():
             setattr(lead, field, value)
         
-        lead.updated_at = datetime.utcnow()
+        lead.updated_at = utc_now()
         self.db.commit()
         self.db.refresh(lead)
         return lead
@@ -228,7 +231,7 @@ class LoyaltyService:
             description=description,
             reference_type=reference_type,
             reference_id=reference_id,
-            expires_at=datetime.utcnow() + timedelta(days=365)  # Points expire in 1 year
+            expires_at=utc_now() + timedelta(days=365)  # Points expire in 1 year
         )
         self.db.add(transaction)
         
@@ -285,7 +288,7 @@ class CommunicationService:
         # Update client's last contact date
         client = self.db.query(Client).filter(Client.id == interaction_data.client_id).first()
         if client:
-            client.last_contact_date = datetime.utcnow()
+            client.last_contact_date = utc_now()
         
         self.db.commit()
         self.db.refresh(interaction)
