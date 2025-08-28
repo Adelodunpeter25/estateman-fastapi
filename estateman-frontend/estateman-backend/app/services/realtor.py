@@ -224,3 +224,88 @@ class CommissionService:
             "brokerage_split": brokerage_split,
             "net_commission": agent_split
         }
+
+    def get_team_members(self, team_lead_id: int) -> List[Realtor]:
+        # Get realtors managed by this team lead
+        return self.db.query(Realtor).filter(
+            Realtor.level.in_([RealtorLevel.JUNIOR, RealtorLevel.SENIOR]),
+            Realtor.status == RealtorStatus.ACTIVE
+        ).all()
+
+    def get_detailed_performance(self, realtor_id: int) -> Dict[str, Any]:
+        realtor = self.db.query(Realtor).filter(Realtor.id == realtor_id).first()
+        if not realtor:
+            return {}
+        
+        # Calculate performance metrics
+        current_month = datetime.utcnow().replace(day=1)
+        
+        # Monthly stats
+        monthly_commissions = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= current_month,
+            Commission.status == "paid"
+        ).scalar() or 0
+        
+        monthly_transactions = self.db.query(Transaction).filter(
+            Transaction.realtor_id == realtor_id,
+            Transaction.created_at >= current_month,
+            Transaction.status == "completed"
+        ).count()
+        
+        # Year-to-date stats
+        year_start = datetime.utcnow().replace(month=1, day=1)
+        ytd_commissions = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= year_start,
+            Commission.status == "paid"
+        ).scalar() or 0
+        
+        ytd_transactions = self.db.query(Transaction).filter(
+            Transaction.realtor_id == realtor_id,
+            Transaction.created_at >= year_start,
+            Transaction.status == "completed"
+        ).count()
+        
+        return {
+            "monthly_performance": {
+                "commissions_earned": monthly_commissions,
+                "transactions_closed": monthly_transactions,
+                "target_achievement": (monthly_commissions / realtor.monthly_target * 100) if realtor.monthly_target > 0 else 0
+            },
+            "ytd_performance": {
+                "commissions_earned": ytd_commissions,
+                "transactions_closed": ytd_transactions,
+                "average_commission": ytd_commissions / ytd_transactions if ytd_transactions > 0 else 0
+            }
+        }
+
+    def update_performance_metrics(self, realtor_id: int) -> Realtor:
+        realtor = self.db.query(Realtor).filter(Realtor.id == realtor_id).first()
+        if not realtor:
+            return None
+        
+        # Update total commissions
+        total_commissions = self.db.query(func.sum(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.status == "paid"
+        ).scalar() or 0
+        
+        # Update active deals
+        active_deals = self.db.query(Transaction).filter(
+            Transaction.realtor_id == realtor_id,
+            Transaction.status.in_(["pending", "in_progress"])
+        ).count()
+        
+        # Update total clients
+        total_clients = self.db.query(func.count(func.distinct(Transaction.client_id))).filter(
+            Transaction.realtor_id == realtor_id
+        ).scalar() or 0
+        
+        realtor.total_commissions = total_commissions
+        realtor.active_deals = active_deals
+        realtor.total_clients = total_clients
+        
+        self.db.commit()
+        self.db.refresh(realtor)
+        return realtor

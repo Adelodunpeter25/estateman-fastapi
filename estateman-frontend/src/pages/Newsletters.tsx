@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,77 +19,70 @@ import {
   FileText,
   Plus
 } from "lucide-react"
+import { newsletterService, Newsletter, EmailTemplate, Subscriber, NewsletterStats, SubscriberSegment } from "@/services/newsletter"
+import { useState, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 const Newsletters = () => {
-  const campaignStats = [
-    { label: "Total Subscribers", value: "4,287", change: "+234", icon: Users },
-    { label: "Campaigns Sent", value: "156", change: "+12", icon: Send },
-    { label: "Open Rate", value: "34.2%", change: "+2.1%", icon: Eye },
-    { label: "Click Rate", value: "8.7%", change: "+1.3%", icon: TrendingUp }
-  ]
+  const [newsletters, setNewsletters] = useState<Newsletter[]>([])
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([])
+  const [subscriberSegments, setSubscriberSegments] = useState<SubscriberSegment[]>([])
+  const [stats, setStats] = useState<NewsletterStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    html_content: ''
+  })
 
-  const newsletters = [
-    {
-      id: 1,
-      title: "January Market Update",
-      subject: "🏡 Your Monthly Real Estate Digest",
-      recipients: 4287,
-      openRate: 36.5,
-      clickRate: 9.2,
-      status: "Sent",
-      sentDate: "2025-01-15",
-      type: "Monthly"
-    },
-    {
-      id: 2,
-      title: "New Property Showcase",
-      subject: "Exclusive Properties Just Listed",
-      recipients: 3845,
-      openRate: 28.7,
-      clickRate: 6.8,
-      status: "Sent",
-      sentDate: "2025-01-12",
-      type: "Promotional"
-    },
-    {
-      id: 3,
-      title: "Investment Opportunities",
-      subject: "Prime Investment Properties Available",
-      recipients: 1256,
-      openRate: 42.1,
-      clickRate: 12.4,
-      status: "Sent",
-      sentDate: "2025-01-10",
-      type: "VIP"
-    },
-    {
-      id: 4,
-      title: "Spring Market Preview",
-      subject: "Get Ready for Spring Real Estate Season",
-      recipients: 4287,
-      openRate: 0,
-      clickRate: 0,
-      status: "Draft",
-      sentDate: null,
-      type: "Seasonal"
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [newslettersData, templatesData, subscribersData, segmentsData, statsData] = await Promise.all([
+          newsletterService.getNewsletters(),
+          newsletterService.getTemplates(),
+          newsletterService.getSubscribers(),
+          newsletterService.getSubscriberSegments(),
+          newsletterService.getNewsletterStats()
+        ])
+        setNewsletters(newslettersData)
+        setTemplates(templatesData)
+        setSubscribers(subscribersData)
+        setSubscriberSegments(segmentsData)
+        setStats(statsData)
+      } catch (error) {
+        console.error('Failed to fetch newsletter data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+    fetchData()
+  }, [])
 
-  const templates = [
-    { id: 1, name: "Market Update", category: "Newsletter", usage: 24 },
-    { id: 2, name: "Property Showcase", category: "Promotional", usage: 18 },
-    { id: 3, name: "Investment Alert", category: "VIP", usage: 12 },
-    { id: 4, name: "Seasonal Guide", category: "Educational", usage: 15 },
-    { id: 5, name: "Welcome Series", category: "Onboarding", usage: 8 }
-  ]
+  const handleCreateTemplate = async () => {
+    try {
+      await newsletterService.createTemplate(templateForm)
+      setShowTemplateModal(false)
+      setTemplateForm({ name: '', description: '', category: '', html_content: '' })
+      // Refresh templates
+      const templatesData = await newsletterService.getTemplates()
+      setTemplates(templatesData)
+    } catch (error) {
+      console.error('Failed to create template:', error)
+    }
+  }
 
-  const subscribers = [
-    { segment: "All Subscribers", count: 4287, growth: "+234", active: true },
-    { segment: "VIP Clients", count: 1256, growth: "+45", active: true },
-    { segment: "First-Time Buyers", count: 1834, growth: "+123", active: true },
-    { segment: "Investors", count: 892, growth: "+67", active: true },
-    { segment: "Past Clients", count: 2156, growth: "+89", active: false }
-  ]
+  const campaignStats = stats ? [
+    { label: "Total Subscribers", value: stats.total_subscribers.toLocaleString(), change: "+0", icon: Users },
+    { label: "Campaigns Sent", value: stats.campaigns_sent.toString(), change: "+0", icon: Send },
+    { label: "Open Rate", value: `${stats.avg_open_rate.toFixed(1)}%`, change: "+0%", icon: Eye },
+    { label: "Click Rate", value: `${stats.avg_click_rate.toFixed(1)}%`, change: "+0%", icon: TrendingUp }
+  ] : []
 
   return (
     <DashboardLayout>
@@ -104,21 +96,17 @@ const Newsletters = () => {
             <p className="text-muted-foreground">Create and manage email campaigns and newsletters</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Templates
-            </Button>
-            <Button className="bg-primary">
+            <Button onClick={() => setShowTemplateModal(true)} className="bg-primary">
               <Plus className="h-4 w-4 mr-2" />
-              New Campaign
+              Add Template
             </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {campaignStats.map((stat, index) => (
-            <Card key={index}>
+          {campaignStats.map((stat) => (
+            <Card key={stat.label}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -170,56 +158,68 @@ const Newsletters = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {newsletters.map((newsletter) => (
-                    <div key={newsletter.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-primary/10 rounded">
-                          <Mail className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{newsletter.title}</h4>
-                          <p className="text-sm text-muted-foreground">{newsletter.subject}</p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                            <span>{newsletter.recipients.toLocaleString()} recipients</span>
-                            {newsletter.status === 'Sent' && (
-                              <>
-                                <span>Open: {newsletter.openRate}%</span>
-                                <span>Click: {newsletter.clickRate}%</span>
-                              </>
-                            )}
-                            {newsletter.sentDate && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {newsletter.sentDate}
-                              </span>
-                            )}
+                {newsletters.length > 0 ? (
+                  <div className="space-y-4">
+                    {newsletters.map((newsletter) => {
+                      const openRate = newsletter.total_recipients > 0 ? (newsletter.total_opens / newsletter.total_recipients * 100).toFixed(1) : '0'
+                      const clickRate = newsletter.total_recipients > 0 ? (newsletter.total_clicks / newsletter.total_recipients * 100).toFixed(1) : '0'
+                      return (
+                        <div key={newsletter.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                          <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary/10 rounded">
+                              <Mail className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">{newsletter.title}</h4>
+                              <p className="text-sm text-muted-foreground">{newsletter.subject}</p>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                <span>{newsletter.total_recipients.toLocaleString()} recipients</span>
+                                {newsletter.status === 'sent' && (
+                                  <>
+                                    <span>Open: {openRate}%</span>
+                                    <span>Click: {clickRate}%</span>
+                                  </>
+                                )}
+                                {newsletter.sent_at && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(newsletter.sent_at).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={newsletter.status === 'sent' ? 'default' : newsletter.status === 'draft' ? 'secondary' : 'outline'}>
+                              {newsletter.status}
+                            </Badge>
+                            <Badge variant="outline">{newsletter.type}</Badge>
+                            <div className="flex items-center gap-1 ml-4">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={newsletter.status === 'Sent' ? 'default' : newsletter.status === 'Draft' ? 'secondary' : 'outline'}>
-                          {newsletter.status}
-                        </Badge>
-                        <Badge variant="outline">{newsletter.type}</Badge>
-                        <div className="flex items-center gap-1 ml-4">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-4" />
+                    <p>No campaigns found</p>
+                    <p className="text-sm">Create your first newsletter campaign to get started</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -231,30 +231,38 @@ const Newsletters = () => {
                 <CardDescription>Reusable templates for your campaigns</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {templates.map((template) => (
-                    <Card key={template.id} className="border">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline">{template.category}</Badge>
-                            <span className="text-sm text-muted-foreground">Used {template.usage} times</span>
+                {templates.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {templates.map((template) => (
+                      <Card key={template.id} className="border">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline">{template.category}</Badge>
+                              <span className="text-sm text-muted-foreground">Used {template.usage_count} times</span>
+                            </div>
+                            <h4 className="font-medium">{template.name}</h4>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Preview
+                              </Button>
+                              <Button size="sm" className="flex-1">
+                                Use Template
+                              </Button>
+                            </div>
                           </div>
-                          <h4 className="font-medium">{template.name}</h4>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Preview
-                            </Button>
-                            <Button size="sm" className="flex-1">
-                              Use Template
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4" />
+                    <p>No templates found</p>
+                    <p className="text-sm">Create your first email template to get started</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -266,25 +274,33 @@ const Newsletters = () => {
                 <CardDescription>Manage your email subscriber lists</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {subscribers.map((subscriber, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full ${subscriber.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                        <div>
-                          <h4 className="font-medium">{subscriber.segment}</h4>
-                          <p className="text-sm text-muted-foreground">{subscriber.count.toLocaleString()} subscribers</p>
+                {subscriberSegments.length > 0 ? (
+                  <div className="space-y-4">
+                    {subscriberSegments.map((segment) => (
+                      <div key={segment.segment} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-3 h-3 rounded-full ${segment.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                          <div>
+                            <h4 className="font-medium">{segment.segment}</h4>
+                            <p className="text-sm text-muted-foreground">{segment.count.toLocaleString()} subscribers</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline">{segment.growth > 0 ? `+${segment.growth}` : segment.growth.toString()}</Badge>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline">{subscriber.growth}</Badge>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4" />
+                    <p>No subscriber segments found</p>
+                    <p className="text-sm">Add subscribers to see segment data</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -305,6 +321,70 @@ const Newsletters = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Template Modal */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Template</DialogTitle>
+            <DialogDescription>
+              Create a new email template for your newsletter campaigns
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Template Name</Label>
+              <Input
+                id="name"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm({...templateForm, name: e.target.value})}
+                placeholder="Enter template name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({...templateForm, description: e.target.value})}
+                placeholder="Enter template description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={templateForm.category} onValueChange={(value) => setTemplateForm({...templateForm, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Newsletter">Newsletter</SelectItem>
+                  <SelectItem value="Promotional">Promotional</SelectItem>
+                  <SelectItem value="Educational">Educational</SelectItem>
+                  <SelectItem value="Onboarding">Onboarding</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="html_content">HTML Content</Label>
+              <Textarea
+                id="html_content"
+                value={templateForm.html_content}
+                onChange={(e) => setTemplateForm({...templateForm, html_content: e.target.value})}
+                placeholder="Enter HTML content for the template"
+                rows={10}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowTemplateModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateTemplate}>
+                Create Template
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
 }

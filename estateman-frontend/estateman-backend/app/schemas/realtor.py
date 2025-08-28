@@ -120,3 +120,54 @@ class CommissionAnalytics(BaseModel):
     this_month: float
     commission_rate: float
     recent_commissions: List[Dict[str, Any]]
+
+# Team Management Schemas
+class TeamMemberResponse(BaseModel):
+    id: int
+    realtor_id: str
+    user_name: str
+    level: RealtorLevel
+    status: RealtorStatus
+    total_commissions: float
+    active_deals: int
+    rating: float
+
+class RealtorPerformance(BaseModel):
+    monthly_commissions: float
+    monthly_transactions: int
+    ytd_commissions: float
+    ytd_transactions: int
+    target_achievement: float
+    average_commission: float
+
+# User Management Schemas
+class BulkUserImport(BaseModel):
+    users: List[Dict[str, Any]]
+    send_invitations: bool = True
+
+class UserActivityLog(BaseModel):
+    user_id: int
+    action: str
+    resource: str
+    details: Optional[Dict[str, Any]] = None
+    timestamp: datetime
+    ip_address: Optional[str] = None
+
+class RoleAssignmentRequest(BaseModel):
+    user_id: int
+    role_id: int
+    assigned_by: int
+    reason: Optional[str] = None
+
+class AuditLogResponse(BaseModel):
+    id: int
+    user_id: int
+    action: str
+    resource: str
+    old_values: Optional[Dict[str, Any]]
+    new_values: Optional[Dict[str, Any]]
+    timestamp: datetime
+    ip_address: Optional[str]
+
+    class Config:
+        from_attributes = True

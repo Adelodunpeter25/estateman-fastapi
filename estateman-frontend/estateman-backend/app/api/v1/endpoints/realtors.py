@@ -156,3 +156,34 @@ def calculate_commission(
 ):
     service = CommissionService(db)
     return service.calculate_commission(sale_price, rate, split)
+
+# Team Management endpoints
+@router.get("/team/{team_lead_id}")
+def get_team_members(
+    team_lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.get_team_members(team_lead_id)
+
+@router.get("/performance/detailed/{realtor_id}")
+def get_detailed_performance(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.get_detailed_performance(realtor_id)
+
+@router.put("/performance/update/{realtor_id}")
+def update_performance_metrics(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    realtor = service.update_performance_metrics(realtor_id)
+    if not realtor:
+        raise HTTPException(status_code=404, detail="Realtor not found")
+    return {"message": "Performance metrics updated successfully", "realtor_id": realtor.id}
