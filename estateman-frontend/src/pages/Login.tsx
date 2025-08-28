@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import { Building2, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
+import { Building2, Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 
 const Login = () => {
@@ -32,6 +32,13 @@ const Login = () => {
             <Building2 className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-bold text-2xl text-primary">Estateman</span>
+        </div>
+
+        <div className="mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
         </div>
 
         <Card className="border-0 shadow-2xl bg-card/50 backdrop-blur">
