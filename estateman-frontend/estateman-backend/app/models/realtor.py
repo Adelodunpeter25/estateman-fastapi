@@ -87,6 +87,7 @@ class Realtor(Base):
     user = relationship("User", back_populates="realtor_profile")
     commissions = relationship("Commission", back_populates="realtor", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="realtor", cascade="all, delete-orphan")
+    campaigns = relationship("Campaign", back_populates="realtor", cascade="all, delete-orphan")
     team = relationship("RealtorTeam", foreign_keys=[team_id], back_populates="members")
     manager = relationship("Realtor", remote_side=[id], foreign_keys=[manager_id], back_populates="team_members")
     team_members = relationship("Realtor", foreign_keys=[manager_id], back_populates="manager")

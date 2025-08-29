@@ -30,40 +30,24 @@ class Campaign(Base):
     __tablename__ = "campaigns"
     
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    description = Column(Text)
-    campaign_type = Column(SQLEnum(CampaignType), nullable=False)
-    status = Column(SQLEnum(CampaignStatus), default=CampaignStatus.DRAFT)
-    target_audience = Column(SQLEnum(AudienceSegment), nullable=False)
-    
-    # Campaign content
-    content = Column(JSON)  # Flexible content storage
-    template_id = Column(Integer, ForeignKey("campaign_templates.id"))
-    
-    # Scheduling
-    start_date = Column(DateTime(timezone=True))
-    end_date = Column(DateTime(timezone=True))
-    scheduled_at = Column(DateTime(timezone=True))
+    realtor_id = Column(Integer, ForeignKey("realtors.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    type = Column(String(50), nullable=False)
+    target_audience = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    schedule_date = Column(DateTime(timezone=True))
+    status = Column(String(20), default="draft")
     
     # Analytics
-    total_reach = Column(Integer, default=0)
-    total_clicks = Column(Integer, default=0)
-    total_opens = Column(Integer, default=0)
-    total_conversions = Column(Integer, default=0)
-    budget = Column(Float, default=0.0)
-    spent = Column(Float, default=0.0)
+    sent = Column(Integer, default=0)
+    responses = Column(Integer, default=0)
     
     # Metadata
-    created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    template = relationship("CampaignTemplate", back_populates="campaigns")
-    analytics = relationship("CampaignAnalytics", back_populates="campaign", cascade="all, delete-orphan")
-    ab_tests = relationship("ABTest", back_populates="campaign", cascade="all, delete-orphan")
-    optimizations = relationship("CampaignOptimization", back_populates="campaign", cascade="all, delete-orphan")
-    metrics = relationship("CampaignMetrics", back_populates="campaign", cascade="all, delete-orphan")
+    realtor = relationship("Realtor", back_populates="campaigns")
 
 class CampaignTemplate(Base):
     __tablename__ = "campaign_templates"
@@ -77,9 +61,6 @@ class CampaignTemplate(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    campaigns = relationship("Campaign", back_populates="template")
 
 class CampaignAnalytics(Base):
     __tablename__ = "campaign_analytics"
@@ -98,7 +79,7 @@ class CampaignAnalytics(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    campaign = relationship("Campaign", back_populates="analytics")
+    campaign = relationship("Campaign")
 
 class MarketingMaterial(Base):
     __tablename__ = "marketing_materials"
@@ -148,7 +129,7 @@ class ABTest(Base):
     ended_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    campaign = relationship("Campaign", back_populates="ab_tests")
+    campaign = relationship("Campaign")
 
 class CampaignAutomation(Base):
     __tablename__ = "campaign_automations"

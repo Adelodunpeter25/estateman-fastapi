@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { StatsCard } from "@/components/dashboard/StatsCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { billingService, type RevenueAnalytics, type CrossTenantReport } from "@/services/billing"
 import { 
   Users, 
   Building2, 
@@ -24,6 +26,28 @@ import {
 } from "lucide-react"
 
 const SaasManagement = () => {
+  const [revenueAnalytics, setRevenueAnalytics] = useState<RevenueAnalytics | null>(null)
+  const [crossTenantReport, setCrossTenantReport] = useState<CrossTenantReport | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [revenue, report] = await Promise.all([
+          billingService.getRevenueAnalytics(),
+          billingService.getCrossTenantReport()
+        ])
+        setRevenueAnalytics(revenue)
+        setCrossTenantReport(report)
+      } catch (error) {
+        console.error('Error fetching SaaS data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
   const tenants = [
     {
       id: 1,
@@ -105,31 +129,31 @@ const SaasManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title="Total Tenants"
-            value="247"
+            value={crossTenantReport?.total_tenants?.toString() || "0"}
             change={{ value: "+12", type: "increase" }}
             icon={Building2}
             description="Active organizations"
           />
           <StatsCard
             title="Total Users"
-            value="3,842"
+            value={crossTenantReport?.total_users?.toLocaleString() || "0"}
             change={{ value: "+156", type: "increase" }}
             icon={Users}
             description="Across all tenants"
           />
           <StatsCard
             title="Monthly Revenue"
-            value="$89,240"
-            change={{ value: "+23.1%", type: "increase" }}
+            value={`$${((revenueAnalytics?.monthly_recurring_revenue || 0) / 1000).toFixed(0)}K`}
+            change={{ value: `+${((revenueAnalytics?.growth_rate || 0) * 100).toFixed(1)}%`, type: "increase" }}
             icon={DollarSign}
             description="Recurring revenue"
           />
           <StatsCard
-            title="System Health"
-            value="99.98%"
+            title="Active Subscriptions"
+            value={revenueAnalytics?.active_subscriptions?.toString() || "0"}
             change={{ value: "+0.02%", type: "increase" }}
             icon={Activity}
-            description="Platform uptime"
+            description="Current subscriptions"
           />
         </div>
 

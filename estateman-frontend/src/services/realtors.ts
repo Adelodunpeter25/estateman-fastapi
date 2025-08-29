@@ -21,6 +21,15 @@ export interface Realtor {
   join_date: string;
   created_at: string;
   updated_at?: string;
+  // Team management fields
+  team_id?: number;
+  manager_id?: number;
+  // Performance tracking fields
+  ytd_commissions?: number;
+  avg_deal_size?: number;
+  conversion_rate?: number;
+  client_satisfaction?: number;
+  response_time_hours?: number;
 }
 
 export interface Commission {
@@ -90,6 +99,13 @@ export interface RealtorUpdateData {
   monthly_target?: number;
   commission_rate?: number;
   split_percentage?: number;
+  team_id?: number;
+  manager_id?: number;
+  ytd_commissions?: number;
+  avg_deal_size?: number;
+  conversion_rate?: number;
+  client_satisfaction?: number;
+  response_time_hours?: number;
 }
 
 export interface CommissionCreateData {
@@ -190,6 +206,112 @@ class RealtorsService {
       });
       throw error;
     }
+  }
+
+  // Enhanced realtor profile methods
+  async getRealtorProfile(realtorId: number): Promise<any> {
+    const response = await api.get(`/realtors/${realtorId}/profile`);
+    return response.data;
+  }
+
+  async updateRealtorProfile(realtorId: number, data: any): Promise<Realtor> {
+    const response = await api.put(`/realtors/${realtorId}/profile`, data);
+    return response.data;
+  }
+
+  async getRealtorTeamInfo(realtorId: number): Promise<any> {
+    const response = await api.get(`/realtors/${realtorId}/team`);
+    return response.data;
+  }
+
+  async getRealtorPerformanceMetrics(realtorId: number): Promise<any> {
+    const response = await api.get(`/realtors/${realtorId}/performance-metrics`);
+    return response.data;
+  }
+
+  // Events methods
+  async getEvents(): Promise<any[]> {
+    const response = await api.get('/realtors/events');
+    return response.data;
+  }
+
+  async registerForEvent(eventId: number): Promise<any> {
+    const response = await api.post(`/realtors/events/${eventId}/register`);
+    return response.data;
+  }
+
+  // Marketing methods
+  async getMarketingMaterials(): Promise<any[]> {
+    const response = await api.get('/realtors/marketing/materials');
+    return response.data;
+  }
+
+  async getRealtorCampaigns(realtorId: number): Promise<any[]> {
+    const response = await api.get(`/realtors/${realtorId}/marketing/campaigns`);
+    return response.data;
+  }
+
+  // Leaderboard methods
+  async getLeaderboard(limit: number = 10): Promise<any[]> {
+    const response = await api.get('/realtors/leaderboard', { params: { limit } });
+    return response.data;
+  }
+
+  async getRealtorRanking(realtorId: number): Promise<any> {
+    const response = await api.get(`/realtors/${realtorId}/ranking`);
+    return response.data;
+  }
+
+  // Additional methods for portal data
+  async getAnnouncements(): Promise<any[]> {
+    const response = await api.get('/announcements');
+    return response.data;
+  }
+
+  async getRealtorLeads(realtorId: number): Promise<any[]> {
+    const response = await api.get(`/realtors/${realtorId}/leads`);
+    return response.data;
+  }
+
+  async getRealtorSalesData(realtorId: number): Promise<any> {
+    const response = await api.get(`/realtors/${realtorId}/sales-data`);
+    return response.data;
+  }
+
+  async getCommissionHistory(realtorId: number): Promise<any[]> {
+    const response = await api.get(`/realtors/${realtorId}/commission-history`);
+    return response.data;
+  }
+
+  async getNetworkMembers(realtorId: number): Promise<any[]> {
+    const response = await api.get(`/realtors/${realtorId}/network-members`);
+    return response.data;
+  }
+
+  async getNotifications(realtorId: number): Promise<any[]> {
+    const response = await api.get(`/realtors/${realtorId}/notifications`);
+    return response.data;
+  }
+
+  async invitePartner(realtorId: number, inviteData: {
+    name: string;
+    email: string;
+    phone?: string;
+    message?: string;
+  }): Promise<any> {
+    const response = await api.post(`/realtors/${realtorId}/invite-partner`, inviteData);
+    return response.data;
+  }
+
+  async createCampaign(realtorId: number, campaignData: {
+    name: string;
+    type: string;
+    target_audience: string;
+    message: string;
+    schedule_date?: string;
+  }): Promise<any> {
+    const response = await api.post(`/realtors/${realtorId}/marketing/campaigns`, campaignData);
+    return response.data;
   }
 }
 

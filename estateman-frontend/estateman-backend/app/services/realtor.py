@@ -393,12 +393,50 @@ class RealtorService:
         ]
 
     def get_events(self) -> List[Dict[str, Any]]:
-        # No event model exists yet - return empty list
-        return []
+        from app.models.event import Event, EventStatus
+        from datetime import datetime
+        
+        events = self.db.query(Event).filter(
+            Event.status.in_([EventStatus.SCHEDULED, EventStatus.UPCOMING]),
+            Event.start_date >= datetime.utcnow()
+        ).order_by(Event.start_date).all()
+        
+        return [
+            {
+                "id": event.id,
+                "title": event.title,
+                "date": event.start_date.strftime("%Y-%m-%d"),
+                "time": f"{event.start_date.strftime('%I:%M %p')} - {event.end_date.strftime('%I:%M %p')}",
+                "location": event.location or "Virtual Meeting" if event.is_virtual else "TBD",
+                "type": event.event_type.value
+            }
+            for event in events
+        ]
 
     def register_for_event(self, user_id: int, event_id: int) -> Dict[str, str]:
-        # No event model exists yet
-        return {"message": "Event registration not available", "event_id": str(event_id)}
+        from app.models.event import Event, EventAttendee, AttendeeStatus
+        
+        event = self.db.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            return {"message": "Event not found", "event_id": str(event_id)}
+        
+        existing = self.db.query(EventAttendee).filter(
+            EventAttendee.event_id == event_id,
+            EventAttendee.user_id == user_id
+        ).first()
+        
+        if existing:
+            self.db.delete(existing)
+            event.current_attendees = max(0, event.current_attendees - 1)
+            self.db.commit()
+            return {"message": "Successfully unregistered from event", "event_id": str(event_id)}
+        
+        attendee = EventAttendee(event_id=event_id, user_id=user_id, status=AttendeeStatus.REGISTERED)
+        self.db.add(attendee)
+        event.current_attendees += 1
+        self.db.commit()
+        
+        return {"message": "Successfully registered for event", "event_id": str(event_id)}
 
     def get_leaderboard(self, limit: int = 10) -> List[Dict[str, Any]]:
         top_realtors = self.db.query(Realtor).join(User).order_by(desc(Realtor.total_commissions)).limit(limit).all()
@@ -466,6 +504,36 @@ class RealtorService:
                 continue
         
         return result
+
+    def get_realtor_performance_metrics(self, realtor_id: int) -> Dict[str, Any]:
+        """Get performance metrics for realtor portal dashboard"""
+        realtor = self.get_realtor(realtor_id)
+        if not realtor:
+            return {"rankProgress": 0, "monthlyTarget": 0, "monthlyEarned": 0, "conversionRate": 0}
+        
+        # Calculate rank progress based on current performance vs next level requirements
+        rank_progress = 0
+        if realtor.level == RealtorLevel.JUNIOR:
+            # Progress towards SENIOR (example: need $50k total commissions)
+            target_commissions = 50000
+            rank_progress = min((realtor.total_commissions / target_commissions) * 100, 100)
+        elif realtor.level == RealtorLevel.SENIOR:
+            # Progress towards TEAM_LEAD (example: need $100k total commissions)
+            target_commissions = 100000
+            rank_progress = min((realtor.total_commissions / target_commissions) * 100, 100)
+        else:
+            rank_progress = 100  # Already at highest level
+        
+        return {
+            "rankProgress": round(rank_progress, 1),
+            "monthlyTarget": realtor.monthly_target or 0,
+            "monthlyEarned": realtor.monthly_earned or 0,
+            "conversionRate": realtor.conversion_rate or 0,
+            "totalCommissions": realtor.total_commissions or 0,
+            "totalClients": realtor.total_clients or 0,
+            "activeDeal": realtor.active_deals or 0,
+            "rating": realtor.rating or 0
+        }
 
 class CommissionService:
     def __init__(self, db: Session):

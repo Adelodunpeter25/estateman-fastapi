@@ -112,6 +112,16 @@ def get_realtor_performance(
         return {"message": "No performance data available for this realtor - they may be new or inactive"}
     return performance
 
+@router.get("/{realtor_id}/performance-metrics")
+def get_realtor_performance_metrics(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get performance metrics for realtor portal"""
+    service = RealtorService(db)
+    return service.get_realtor_performance_metrics(realtor_id)
+
 # Commission endpoints
 @router.post("/commissions/", response_model=CommissionResponse)
 def create_commission(
