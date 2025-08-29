@@ -19,6 +19,8 @@ import {
   Target,
   CheckCircle
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { taskService, type Task, type Project } from "@/services/tasks"
 
 const tasks = [
   {
@@ -119,6 +121,31 @@ const projects = [
 ]
 
 const Tasks = () => {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [tasksData, projectsData] = await Promise.all([
+        taskService.getTasks({ limit: 50 }),
+        taskService.getProjects({ limit: 20 })
+      ])
+      setTasks(tasksData)
+      setProjects(projectsData)
+    } catch (err) {
+      setError('Failed to load tasks and projects')
+      console.error('Tasks error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Completed":
@@ -257,7 +284,14 @@ const Tasks = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {tasks.map((task) => (
+                  {loading ? (
+                    <div className="text-center py-8">Loading tasks...</div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-red-600">{error}</div>
+                  ) : tasks.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">No tasks found</div>
+                  ) : (
+                    tasks.map((task) => (
                     <div key={task.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3">
@@ -322,7 +356,8 @@ const Tasks = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -335,7 +370,12 @@ const Tasks = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {projects.map((project) => (
+                {loading ? (
+                  <div className="text-center py-8">Loading projects...</div>
+                ) : projects.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">No projects found</div>
+                ) : (
+                  projects.map((project) => (
                   <div key={project.id} className="p-4 border rounded-lg">
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -371,7 +411,8 @@ const Tasks = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

@@ -142,7 +142,7 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild>
                   <NavLink to="/dashboard" className={`${getNavCls("/dashboard")} px-2 py-2`}>
                     <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-                    {!collapsed && <span className="text-sm">Dashboard</span>}
+                    {!collapsed && <span className="text-sm">Overview</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

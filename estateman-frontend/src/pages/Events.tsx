@@ -18,6 +18,8 @@ import {
   Building2,
   TrendingUp
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { eventService, type Event } from "@/services/events"
 
 const events = [
   {
@@ -124,6 +126,34 @@ const upcomingEvents = [
 ]
 
 const Events = () => {
+  const [events, setEvents] = useState<Event[]>([])
+  const [todayEvents, setTodayEvents] = useState<Event[]>([])
+  const [eventStats, setEventStats] = useState({ total_events: 0, this_month: 0, avg_attendance: 0 })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [eventsData, todayData, statsData] = await Promise.all([
+        eventService.getEvents({ limit: 50 }),
+        eventService.getTodayEvents(),
+        eventService.getEventStats()
+      ])
+      setEvents(eventsData)
+      setTodayEvents(todayData)
+      setEventStats(statsData)
+    } catch (err) {
+      setError('Failed to load events data')
+      console.error('Events error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Upcoming":

@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,55 +18,57 @@ import {
   Calendar,
   Target
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { notificationService, type Notification, type NotificationPreference } from "@/services/notifications"
 
 const Notifications = () => {
-  const notifications = [
-    {
-      id: 1,
-      type: "success",
-      title: "New Property Sale Completed",
-      message: "Sarah Johnson completed the sale of 123 Oak Street for $485,000",
-      time: "2 minutes ago",
-      read: false,
-      category: "Sales"
-    },
-    {
-      id: 2,
-      type: "info",
-      title: "New Lead Assigned",
-      message: "High-value lead from premium listing inquiry has been assigned to Mike Wilson",
-      time: "15 minutes ago",
-      read: false,
-      category: "Leads"
-    },
-    {
-      id: 3,
-      type: "warning",
-      title: "Commission Payment Due",
-      message: "Monthly commission payment of $12,500 is due for processing",
-      time: "1 hour ago",
-      read: true,
-      category: "Finance"
-    },
-    {
-      id: 4,
-      type: "info",
-      title: "Event Reminder",
-      message: "Team meeting scheduled for tomorrow at 2:00 PM",
-      time: "2 hours ago",
-      read: true,
-      category: "Events"
-    },
-    {
-      id: 5,
-      type: "success",
-      title: "New Realtor Onboarded",
-      message: "Jessica Martinez has completed onboarding and is now active",
-      time: "4 hours ago",
-      read: true,
-      category: "Team"
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [preferences, setPreferences] = useState<NotificationPreference[]>([])
+  const [stats, setStats] = useState({ total: 0, unread: 0, categories: {} })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [notificationsData, preferencesData, statsData] = await Promise.all([
+        notificationService.getNotifications({ limit: 50 }),
+        notificationService.getPreferences(),
+        notificationService.getNotificationStats()
+      ])
+      setNotifications(notificationsData)
+      setPreferences(preferencesData)
+      setStats(statsData)
+    } catch (err) {
+      setError('Failed to load notifications')
+      console.error('Notifications error:', err)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const handleMarkAsRead = async (notificationId: number) => {
+    try {
+      await notificationService.markAsRead(notificationId)
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n))
+    } catch (err) {
+      console.error('Failed to mark as read:', err)
+    }
+  }
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    } catch (err) {
+      console.error('Failed to mark all as read:', err)
+    }
+  }
+
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -78,14 +79,7 @@ const Notifications = () => {
     }
   }
 
-  const notificationSettings = [
-    { category: "Sales Updates", email: true, push: true, description: "New sales, closings, and revenue updates" },
-    { category: "Lead Notifications", email: true, push: false, description: "New leads and lead status changes" },
-    { category: "Team Activities", email: false, push: true, description: "Realtor performance and team updates" },
-    { category: "Commission Alerts", email: true, push: true, description: "Commission calculations and payments" },
-    { category: "Event Reminders", email: true, push: true, description: "Meetings, appointments, and deadlines" },
-    { category: "System Updates", email: false, push: false, description: "Platform updates and maintenance" }
-  ]
+
 
   return (
     <DashboardLayout>
@@ -121,7 +115,7 @@ const Notifications = () => {
                   <div className="flex items-center gap-3">
                     <Bell className="h-8 w-8 text-primary" />
                     <div>
-                      <p className="text-2xl font-bold">24</p>
+                      <p className="text-2xl font-bold">{stats.unread}</p>
                       <p className="text-sm text-muted-foreground">Unread</p>
                     </div>
                   </div>
@@ -132,7 +126,7 @@ const Notifications = () => {
                   <div className="flex items-center gap-3">
                     <DollarSign className="h-8 w-8 text-green-500" />
                     <div>
-                      <p className="text-2xl font-bold">8</p>
+                      <p className="text-2xl font-bold">{stats.categories['Finance'] || 0}</p>
                       <p className="text-sm text-muted-foreground">Financial</p>
                     </div>
                   </div>
@@ -143,7 +137,7 @@ const Notifications = () => {
                   <div className="flex items-center gap-3">
                     <Target className="h-8 w-8 text-blue-500" />
                     <div>
-                      <p className="text-2xl font-bold">12</p>
+                      <p className="text-2xl font-bold">{stats.categories['Leads'] || 0}</p>
                       <p className="text-sm text-muted-foreground">Leads</p>
                     </div>
                   </div>
@@ -154,7 +148,7 @@ const Notifications = () => {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-8 w-8 text-purple-500" />
                     <div>
-                      <p className="text-2xl font-bold">6</p>
+                      <p className="text-2xl font-bold">{stats.categories['Events'] || 0}</p>
                       <p className="text-sm text-muted-foreground">Events</p>
                     </div>
                   </div>
@@ -170,34 +164,43 @@ const Notifications = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {notifications.map((notification) => (
-                    <div 
-                      key={notification.id} 
-                      className={`flex items-start gap-4 p-4 border rounded-lg ${
-                        !notification.read ? 'bg-muted/50 border-primary/20' : 'hover:bg-muted/30'
-                      }`}
-                    >
-                      {getNotificationIcon(notification.type)}
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">{notification.title}</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {notification.category}
-                            </Badge>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-primary rounded-full" />
-                            )}
+                  {loading ? (
+                    <div className="text-center py-8">Loading notifications...</div>
+                  ) : error ? (
+                    <div className="text-center py-8 text-red-600">{error}</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">No notifications found</div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        className={`flex items-start gap-4 p-4 border rounded-lg cursor-pointer ${
+                          !notification.is_read ? 'bg-muted/50 border-primary/20' : 'hover:bg-muted/30'
+                        }`}
+                        onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
+                      >
+                        {getNotificationIcon(notification.notification_type)}
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">{notification.title}</h4>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {notification.category}
+                              </Badge>
+                              {!notification.is_read && (
+                                <div className="w-2 h-2 bg-primary rounded-full" />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{notification.message}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {new Date(notification.created_at).toLocaleString()}
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{notification.message}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {notification.time}
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -211,22 +214,22 @@ const Notifications = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {notificationSettings.map((setting, index) => (
+                  {preferences.map((setting, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
                         <h4 className="font-medium">{setting.category}</h4>
-                        <p className="text-sm text-muted-foreground">{setting.description}</p>
+                        <p className="text-sm text-muted-foreground">{setting.channel} notifications</p>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4" />
                           <span className="text-sm">Email</span>
-                          <Switch checked={setting.email} />
+                          <Switch checked={setting.is_enabled && setting.channel === 'email'} />
                         </div>
                         <div className="flex items-center gap-2">
                           <MessageSquare className="h-4 w-4" />
                           <span className="text-sm">Push</span>
-                          <Switch checked={setting.push} />
+                          <Switch checked={setting.is_enabled && setting.channel === 'push'} />
                         </div>
                       </div>
                     </div>
