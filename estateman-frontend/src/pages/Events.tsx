@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/DashboardLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -22,109 +22,7 @@ import {
 import { useEffect, useState } from "react"
 import { eventService, type Event } from "@/services/events"
 
-const events = [
-  {
-    id: "1",
-    title: "Luxury Villa Open House",
-    type: "Open House",
-    date: "2025-02-15",
-    time: "10:00 AM - 4:00 PM",
-    location: "123 Waterfront Drive, Downtown",
-    attendees: 45,
-    maxAttendees: 50,
-    organizer: "Sarah Johnson",
-    organizerInitials: "SJ",
-    status: "Upcoming",
-    description: "Exclusive viewing of our newest luxury waterfront property."
-  },
-  {
-    id: "2",
-    title: "First-Time Buyer Seminar",
-    type: "Seminar",
-    date: "2025-02-18",
-    time: "2:00 PM - 5:00 PM",
-    location: "Estateman Conference Room A",
-    attendees: 32,
-    maxAttendees: 40,
-    organizer: "Mike Chen",
-    organizerInitials: "MC",
-    status: "Upcoming",
-    description: "Educational seminar for first-time home buyers covering financing and process."
-  },
-  {
-    id: "3",
-    title: "Property Investment Workshop",
-    type: "Workshop",
-    date: "2025-02-20",
-    time: "6:00 PM - 8:00 PM",
-    location: "Virtual Meeting",
-    attendees: 78,
-    maxAttendees: 100,
-    organizer: "Emily Davis",
-    organizerInitials: "ED",
-    status: "Upcoming",
-    description: "Learn about real estate investment strategies and market trends."
-  },
-  {
-    id: "4",
-    title: "Team Training - New CRM",
-    type: "Training",
-    date: "2025-02-12",
-    time: "9:00 AM - 12:00 PM",
-    location: "Estateman Training Center",
-    attendees: 24,
-    maxAttendees: 25,
-    organizer: "James Wilson",
-    organizerInitials: "JW",
-    status: "Completed",
-    description: "Training session on the new CRM system features and workflow."
-  },
-  {
-    id: "5",
-    title: "Quarterly Sales Meeting",
-    type: "Meeting",
-    date: "2025-02-25",
-    time: "10:00 AM - 2:00 PM",
-    location: "Main Conference Room",
-    attendees: 15,
-    maxAttendees: 20,
-    organizer: "Lisa Anderson",
-    organizerInitials: "LA",
-    status: "Scheduled",
-    description: "Review Q1 performance and set Q2 targets."
-  }
-]
-
-const upcomingEvents = [
-  {
-    id: "1",
-    title: "Client Meeting - Rodriguez Family",
-    time: "9:00 AM",
-    duration: "1 hour",
-    type: "Client Meeting"
-  },
-  {
-    id: "2",
-    title: "Property Tour - Downtown Loft",
-    time: "11:30 AM",
-    duration: "45 minutes",
-    type: "Property Tour"
-  },
-  {
-    id: "3",
-    title: "Contract Signing - Chen Property",
-    time: "2:00 PM",
-    duration: "30 minutes",
-    type: "Contract"
-  },
-  {
-    id: "4",
-    title: "Team Stand-up Meeting",
-    time: "4:00 PM",
-    duration: "30 minutes",
-    type: "Team Meeting"
-  }
-]
+// Removed hardcoded data - now using API data
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([])
@@ -132,6 +30,7 @@ const Events = () => {
   const [eventStats, setEventStats] = useState({ total_events: 0, this_month: 0, avg_attendance: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -153,6 +52,33 @@ const Events = () => {
       console.error('Events error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const createQuickEvent = async (eventType: string, title: string) => {
+    try {
+      setCreating(true)
+      const now = new Date()
+      const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000) // Tomorrow
+      const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // 2 hours later
+      
+      await eventService.createEvent({
+        title,
+        event_type: eventType,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        location: eventType === 'Open House' ? 'Property Location' : 'Office',
+        is_virtual: eventType === 'Virtual Tour',
+        max_attendees: eventType === 'Open House' ? 50 : 20
+      })
+      
+      // Reload data to show new event
+      await loadData()
+    } catch (err) {
+      console.error('Failed to create event:', err)
+      setError('Failed to create event')
+    } finally {
+      setCreating(false)
     }
   }
   const getStatusColor = (status: string) => {
@@ -209,19 +135,19 @@ const Events = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">42</div>
-              <p className="text-xs text-muted-foreground">+8 vs last month</p>
+              <div className="text-2xl font-bold">{eventStats.this_month}</div>
+              <p className="text-xs text-muted-foreground">This month</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Houses</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Events</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">847 total attendees</p>
+              <div className="text-2xl font-bold">{eventStats.total_events}</div>
+              <p className="text-xs text-muted-foreground">All events</p>
             </CardContent>
           </Card>
 
@@ -231,19 +157,19 @@ const Events = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">78%</div>
-              <p className="text-xs text-muted-foreground">+5% vs last month</p>
+              <div className="text-2xl font-bold">{eventStats.avg_attendance}</div>
+              <p className="text-xs text-muted-foreground">Average attendees</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">Today's Events</CardTitle>
               <TrendingUp className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">23.4%</div>
-              <p className="text-xs text-muted-foreground">Events to leads</p>
+              <div className="text-2xl font-bold text-success">{todayEvents.length}</div>
+              <p className="text-xs text-muted-foreground">Scheduled today</p>
             </CardContent>
           </Card>
         </div>
@@ -291,7 +217,7 @@ const Events = () => {
                     <div key={event.id} className="p-4 border rounded-lg hover:shadow-sm transition-shadow">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3">
-                          {getTypeIcon(event.type)}
+                          {getTypeIcon(event.type || event.event_type)}
                           <div>
                             <h4 className="font-semibold">{event.title}</h4>
                             <p className="text-sm text-muted-foreground">{event.description}</p>
@@ -306,11 +232,11 @@ const Events = () => {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span>{event.date}</span>
+                            <span>{event.date || (event.start_date ? new Date(event.start_date).toLocaleDateString() : 'No date')}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span>{event.time}</span>
+                            <span>{event.time || (event.start_date && event.end_date ? `${new Date(event.start_date).toLocaleTimeString()} - ${new Date(event.end_date).toLocaleTimeString()}` : 'No time')}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -321,25 +247,25 @@ const Events = () => {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
                             <Users className="h-3 w-3 text-muted-foreground" />
-                            <span>{event.attendees}/{event.maxAttendees} attendees</span>
+                            <span>{event.attendees || event.current_attendees || 0}/{event.maxAttendees || event.max_attendees || 0} attendees</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Avatar className="h-4 w-4">
                               <AvatarFallback className="text-xs">
-                                {event.organizerInitials}
+                                {event.organizerInitials || 'OR'}
                               </AvatarFallback>
                             </Avatar>
-                            <span>Organized by {event.organizer}</span>
+                            <span>Organized by {event.organizer || 'Unknown'}</span>
                           </div>
                           <Badge variant="outline" className="text-xs">
-                            {event.type}
+                            {event.type || event.event_type}
                           </Badge>
                         </div>
                       </div>
                       
                       <div className="flex justify-between items-center pt-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          {((event.attendees / event.maxAttendees) * 100).toFixed(0)}% capacity
+                          {(((event.attendees || event.current_attendees || 0) / (event.maxAttendees || event.max_attendees || 1)) * 100).toFixed(0)}% capacity
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="ghost">Edit</Button>
@@ -365,22 +291,28 @@ const Events = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {upcomingEvents.map((event) => (
-                    <div key={event.id} className="p-3 border rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-sm">{event.title}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {event.type}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Clock className="h-3 w-3" />
-                          {event.time} ({event.duration})
+                  {loading ? (
+                    <div className="text-center py-8">Loading...</div>
+                  ) : todayEvents.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">No events today</div>
+                  ) : (
+                    todayEvents.map((event) => (
+                      <div key={event.id} className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium text-sm">{event.title}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {event.type}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Clock className="h-3 w-3" />
+                            {event.time} ({event.duration})
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -392,19 +324,39 @@ const Events = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    disabled={creating}
+                    onClick={() => createQuickEvent('OPEN_HOUSE', 'New Open House Event')}
+                  >
                     <Calendar className="h-4 w-4 mr-2" />
                     Schedule Open House
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    disabled={creating}
+                    onClick={() => createQuickEvent('MEETING', 'Client Meeting')}
+                  >
                     <Users className="h-4 w-4 mr-2" />
                     Book Client Meeting
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    disabled={creating}
+                    onClick={() => createQuickEvent('APPOINTMENT', 'Virtual Property Tour')}
+                  >
                     <Video className="h-4 w-4 mr-2" />
                     Create Virtual Tour
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    disabled={creating}
+                    onClick={() => createQuickEvent('TRAINING', 'Team Training Session')}
+                  >
                     <UserCheck className="h-4 w-4 mr-2" />
                     Team Training Session
                   </Button>
@@ -433,7 +385,13 @@ const Events = () => {
                   {Array.from({ length: 35 }, (_, i) => {
                     const day = i - 6 + 1
                     const isCurrentMonth = day > 0 && day <= 28
-                    const hasEvent = isCurrentMonth && [8, 12, 15, 18, 20, 25].includes(day)
+                    const currentDate = new Date()
+                    const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+                    const dayEvents = events.filter(event => {
+                      if (!event.start_date) return false
+                      const eventDate = new Date(event.start_date)
+                      return eventDate.toDateString() === cellDate.toDateString()
+                    })
                     
                     return (
                       <div key={i} className={`min-h-[80px] p-2 border rounded ${
@@ -442,11 +400,16 @@ const Events = () => {
                         {isCurrentMonth && (
                           <>
                             <div className="text-sm font-medium mb-1">{day}</div>
-                            {hasEvent && (
+                            {dayEvents.length > 0 && (
                               <div className="space-y-1">
-                                <div className="text-xs bg-primary text-primary-foreground px-1 py-0.5 rounded truncate">
-                                  Event
-                                </div>
+                                {dayEvents.slice(0, 2).map((event, idx) => (
+                                  <div key={idx} className="text-xs bg-primary text-primary-foreground px-1 py-0.5 rounded truncate">
+                                    {event.title}
+                                  </div>
+                                ))}
+                                {dayEvents.length > 2 && (
+                                  <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} more</div>
+                                )}
                               </div>
                             )}
                           </>

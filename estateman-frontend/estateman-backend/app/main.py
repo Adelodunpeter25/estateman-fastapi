@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
@@ -8,9 +8,12 @@ from .core.exceptions import (
     AppException, app_exception_handler, validation_exception_handler,
     sqlalchemy_exception_handler, general_exception_handler
 )
+from .core.websocket import manager
+from .api.deps import get_current_user_websocket
+import json
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter, analytics
+from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter, analytics, task, event, gamification, notification, integration
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -76,6 +79,51 @@ app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["tr
 # Import and include Analytics router
 from .api.v1.endpoints import analytics
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+
+# Import and include Tasks router
+from .api.v1.endpoints import tasks
+app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+
+# Import and include Events router
+from .api.v1.endpoints import events
+app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
+
+# Import and include Gamification router
+from .api.v1.endpoints import gamification
+app.include_router(gamification.router, prefix="/api/v1/gamification", tags=["gamification"])
+
+# Import and include Notifications router
+from .api.v1.endpoints import notifications
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
+
+# Import and include Integrations router
+from .api.v1.endpoints import integrations
+app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
+
+# WebSocket endpoint for real-time notifications
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            # Keep connection alive and handle incoming messages
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            # Handle different message types
+            if message_data.get("type") == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+            elif message_data.get("type") == "join_room":
+                room_id = message_data.get("room_id")
+                if room_id:
+                    await manager.join_room(websocket, room_id)
+            elif message_data.get("type") == "leave_room":
+                room_id = message_data.get("room_id")
+                if room_id:
+                    await manager.leave_room(websocket, room_id)
+                    
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
 
 @app.get("/")
 async def root():

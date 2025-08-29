@@ -16,6 +16,14 @@ export interface Event {
   organizer_id: number
   created_at: string
   updated_at?: string
+  // Frontend compatibility fields
+  type?: string
+  date?: string
+  time?: string
+  attendees?: number
+  maxAttendees?: number
+  organizer?: string
+  organizerInitials?: string
 }
 
 export interface EventAttendee {
@@ -49,7 +57,7 @@ export const eventService = {
     status?: string
   }): Promise<Event[]> => {
     const response = await api.get('/events/events', { params })
-    return response.data
+    return response.data || []
   },
 
   getEvent: async (eventId: number): Promise<Event> => {
@@ -80,7 +88,7 @@ export const eventService = {
 
   getTodayEvents: async (): Promise<Event[]> => {
     const response = await api.get('/events/events/upcoming/today')
-    return response.data
+    return response.data || []
   },
 
   getEventStats: async (): Promise<{

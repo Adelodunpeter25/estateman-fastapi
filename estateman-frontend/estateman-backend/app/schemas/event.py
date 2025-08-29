@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from ..models.event import EventType, EventStatus
+from ..models.event import EventType, EventStatus, AttendeeStatus
 
 class EventBase(BaseModel):
     title: str
@@ -40,6 +40,13 @@ class EventResponse(EventBase):
     class Config:
         from_attributes = True
 
+class EventResponseExtended(EventResponse):
+    organizer: Optional[str] = None
+    organizerInitials: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    attendees: Optional[int] = None
+
 class EventAttendeeCreate(BaseModel):
     event_id: int
     user_id: int
@@ -48,7 +55,7 @@ class EventAttendeeResponse(BaseModel):
     id: int
     event_id: int
     user_id: int
-    status: str
+    status: AttendeeStatus
     registered_at: datetime
 
     class Config:

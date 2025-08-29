@@ -2,11 +2,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_, or_
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import json
 from ..core.datetime_utils import utc_now
 from ..models.gamification import (
     Achievement, Badge, UserAchievement, LoyaltyMember, PointTransaction,
     Reward, RewardRedemption, Challenge, ChallengeParticipation,
-    Leaderboard, LeaderboardEntry, MemberTier
+    Leaderboard, LeaderboardEntry, MemberTier, AchievementType
 )
 from ..schemas.gamification import (
     AchievementCreate, BadgeCreate, PointTransactionCreate,
@@ -25,6 +26,90 @@ class GamificationService:
             self.db.commit()
             self.db.refresh(member)
         return member
+
+    def trigger_achievement_check(self, user_id: int, event_type: str, event_data: Dict[str, Any]):
+        """Automatically check and award achievements based on events"""
+        achievements = self.db.query(Achievement).filter(
+            Achievement.is_active == True,
+            Achievement.achievement_type == event_type
+        ).all()
+        
+        for achievement in achievements:
+            if self._check_achievement_criteria(user_id, achievement, event_data):
+                achievement_service = AchievementService(self.db)
+                achievement_service.award_achievement(user_id, achievement.id)
+    
+    def _check_achievement_criteria(self, user_id: int, achievement: Achievement, event_data: Dict[str, Any]) -> bool:
+        """Check if user meets achievement criteria"""
+        if not achievement.requirements:
+            return True
+        
+        requirements = achievement.requirements if isinstance(achievement.requirements, dict) else json.loads(achievement.requirements)
+        
+        # Example criteria checks
+        if achievement.achievement_type == AchievementType.SALES:
+            if 'sales_count' in requirements:
+                # Check user's total sales count
+                return event_data.get('total_sales', 0) >= requirements['sales_count']
+        elif achievement.achievement_type == AchievementType.REFERRAL:
+            if 'referral_count' in requirements:
+                return event_data.get('total_referrals', 0) >= requirements['referral_count']
+        
+        return False
+    
+    def share_achievement(self, user_id: int, achievement_id: int, platform: str) -> Dict[str, Any]:
+        """Share achievement on social platforms"""
+        user_achievement = self.db.query(UserAchievement).filter(
+            and_(
+                UserAchievement.user_id == user_id,
+                UserAchievement.achievement_id == achievement_id
+            )
+        ).first()
+        
+        if not user_achievement:
+            return {"success": False, "message": "Achievement not found"}
+        
+        # Mark as shared
+        user_achievement.is_shared = True
+        
+        # Award bonus points for sharing
+        self.award_points(user_id, 50, f"Shared achievement on {platform}", str(achievement_id), "social_share")
+        
+        self.db.commit()
+        
+        return {
+            "success": True,
+            "share_url": f"https://estateman.com/achievements/{achievement_id}",
+            "message": f"Achievement shared on {platform}! +50 bonus points awarded."
+        }
+    
+    def get_team_challenges(self, team_id: int) -> List[Dict[str, Any]]:
+        """Get challenges for team participation"""
+        # This would integrate with team/MLM structure
+        team_challenges = self.db.query(Challenge).filter(
+            Challenge.challenge_type == "team",
+            Challenge.status == "active"
+        ).all()
+        
+        result = []
+        for challenge in team_challenges:
+            # Get team participation stats
+            team_participation = self.db.query(ChallengeParticipation).filter(
+                ChallengeParticipation.challenge_id == challenge.id
+            ).count()
+            
+            result.append({
+                "challenge": challenge,
+                "team_participants": team_participation,
+                "team_progress": self._calculate_team_progress(challenge.id, team_id)
+            })
+        
+        return result
+    
+    def _calculate_team_progress(self, challenge_id: int, team_id: int) -> float:
+        """Calculate team progress for a challenge"""
+        # Mock implementation - would integrate with actual team structure
+        return 0.0
 
     def award_points(self, user_id: int, points: int, description: str, reference_id: Optional[str] = None, reference_type: Optional[str] = None) -> PointTransaction:
         member = self.get_or_create_member(user_id)
@@ -107,6 +192,11 @@ class AchievementService:
     def get_achievements(self, skip: int = 0, limit: int = 100) -> List[Achievement]:
         return self.db.query(Achievement).filter(Achievement.is_active == True).offset(skip).limit(limit).all()
 
+    def check_and_award_achievements(self, user_id: int, event_type: str, event_data: Dict[str, Any]):
+        """Check and award achievements based on user activity"""
+        gamification_service = GamificationService(self.db)
+        gamification_service.trigger_achievement_check(user_id, event_type, event_data)
+    
     def award_achievement(self, user_id: int, achievement_id: int) -> Optional[UserAchievement]:
         # Check if already earned
         existing = self.db.query(UserAchievement).filter(
@@ -260,6 +350,15 @@ class LeaderboardService:
             
             return leaderboard
         
+        elif category == "sales":
+            # Sales leaderboard - would integrate with transaction data
+            # Mock implementation for now
+            return []
+        elif category == "referrals":
+            # Referral leaderboard - would integrate with MLM data
+            # Mock implementation for now
+            return []
+        
         return []
 
 class ChallengeService:
@@ -316,6 +415,60 @@ class ChallengeService:
         self.db.commit()
         self.db.refresh(participation)
         return participation
+    
+    def update_challenge_progress(self, user_id: int, challenge_id: int, progress_data: Dict[str, Any]):
+        """Update user's progress in a challenge"""
+        participation = self.db.query(ChallengeParticipation).filter(
+            and_(
+                ChallengeParticipation.user_id == user_id,
+                ChallengeParticipation.challenge_id == challenge_id
+            )
+        ).first()
+        
+        if not participation:
+            return None
+        
+        challenge = self.db.query(Challenge).filter(Challenge.id == challenge_id).first()
+        if not challenge:
+            return None
+        
+        # Calculate progress based on challenge requirements
+        new_progress = self._calculate_challenge_progress(challenge, progress_data)
+        participation.progress = new_progress
+        
+        # Check if challenge is completed
+        if new_progress >= 100.0 and not participation.completed_at:
+            participation.completed_at = utc_now()
+            
+            # Award challenge points
+            if challenge.points_reward > 0:
+                gamification_service = GamificationService(self.db)
+                gamification_service.award_points(
+                    user_id,
+                    challenge.points_reward,
+                    f"Challenge completed: {challenge.name}",
+                    str(challenge_id),
+                    "challenge"
+                )
+                participation.points_earned = challenge.points_reward
+        
+        self.db.commit()
+        return participation
+    
+    def _calculate_challenge_progress(self, challenge: Challenge, progress_data: Dict[str, Any]) -> float:
+        """Calculate challenge progress percentage"""
+        if not challenge.requirements:
+            return 0.0
+        
+        requirements = challenge.requirements if isinstance(challenge.requirements, dict) else json.loads(challenge.requirements)
+        
+        # Example progress calculation
+        if 'target_value' in requirements:
+            current_value = progress_data.get('current_value', 0)
+            target_value = requirements['target_value']
+            return min(100.0, (current_value / target_value) * 100.0)
+        
+        return 0.0
 
 class GamificationAnalyticsService:
     def __init__(self, db: Session):

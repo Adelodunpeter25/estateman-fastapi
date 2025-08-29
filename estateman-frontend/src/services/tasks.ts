@@ -14,6 +14,12 @@ export interface Task {
   due_date?: string
   created_at: string
   updated_at?: string
+  // Frontend compatibility fields
+  assignee?: string
+  assigneeInitials?: string
+  project?: string
+  tags?: string[]
+  dueDate?: string
 }
 
 export interface Project {
@@ -27,6 +33,10 @@ export interface Project {
   updated_at?: string
   tasks_total: number
   tasks_completed: number
+  // Frontend compatibility fields
+  team?: string[]
+  tasksTotal?: number
+  tasksCompleted?: number
 }
 
 export const taskService = {
@@ -50,7 +60,7 @@ export const taskService = {
     assigned_to?: number
   }): Promise<Task[]> => {
     const response = await api.get('/tasks/tasks', { params })
-    return response.data
+    return response.data || []
   },
 
   getTask: async (taskId: number): Promise<Task> => {
@@ -90,7 +100,7 @@ export const taskService = {
     limit?: number
   }): Promise<Project[]> => {
     const response = await api.get('/tasks/projects', { params })
-    return response.data
+    return response.data || []
   },
 
   getProject: async (projectId: number): Promise<Project> => {
@@ -105,6 +115,17 @@ export const taskService = {
     deadline?: string
   }): Promise<Project> => {
     const response = await api.put(`/tasks/projects/${projectId}`, projectData)
+    return response.data
+  },
+
+  getTaskStats: async (): Promise<{
+    total_tasks: number
+    completed_tasks: number
+    in_progress_tasks: number
+    overdue_tasks: number
+    completion_rate: number
+  }> => {
+    const response = await api.get('/tasks/stats')
     return response.data
   }
 }

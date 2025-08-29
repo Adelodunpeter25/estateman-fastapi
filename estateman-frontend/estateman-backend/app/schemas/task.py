@@ -62,3 +62,9 @@ class TaskResponse(TaskBase):
 
     class Config:
         from_attributes = True
+
+class TaskResponseExtended(TaskResponse):
+    assignee: Optional[str] = None
+    assigneeInitials: Optional[str] = None
+    project_name: Optional[str] = None
+    creator_name: Optional[str] = None

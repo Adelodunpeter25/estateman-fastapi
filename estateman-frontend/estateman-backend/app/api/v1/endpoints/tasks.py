@@ -9,9 +9,19 @@ from ....schemas.task import (
     TaskCreate, TaskUpdate, TaskResponse,
     ProjectCreate, ProjectUpdate, ProjectResponse
 )
+from typing import Optional
 from ....services.task import TaskService, ProjectService
 
 router = APIRouter()
+
+# Task stats endpoint
+@router.get("/stats")
+async def get_task_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = TaskService(db)
+    return service.get_task_stats()
 
 # Task endpoints
 @router.post("/tasks", response_model=TaskResponse)
@@ -23,7 +33,7 @@ async def create_task(
     service = TaskService(db)
     return service.create_task(task_data, current_user.id)
 
-@router.get("/tasks", response_model=List[TaskResponse])
+@router.get("/tasks")
 async def get_tasks(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -81,7 +91,7 @@ async def create_project(
     service = ProjectService(db)
     return service.create_project(project_data, current_user.id)
 
-@router.get("/projects", response_model=List[ProjectResponse])
+@router.get("/projects")
 async def get_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -89,21 +99,7 @@ async def get_projects(
     current_user: User = Depends(get_current_user)
 ):
     service = ProjectService(db)
-    projects = service.get_projects(skip, limit)
-    
-    # Add task statistics
-    result = []
-    for project in projects:
-        project_dict = project.__dict__.copy()
-        stats = service.get_project_with_stats(project.id)
-        if stats:
-            project_dict.update({
-                "tasks_total": stats["tasks_total"],
-                "tasks_completed": stats["tasks_completed"]
-            })
-        result.append(ProjectResponse(**project_dict))
-    
-    return result
+    return service.get_projects(skip, limit)
 
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(
@@ -129,3 +125,64 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
+
+# Enhanced task management endpoints
+@router.post("/tasks/{task_id}/dependencies")
+async def add_task_dependency(
+    task_id: int,
+    depends_on_task_id: int,
+    dependency_type: str = "finish_to_start",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = TaskService(db)
+    dependency = service.add_task_dependency(task_id, depends_on_task_id, dependency_type)
+    if not dependency:
+        raise HTTPException(status_code=400, detail="Could not create dependency")
+    return {"message": "Dependency added successfully"}
+
+@router.post("/tasks/{task_id}/time/start")
+async def start_time_tracking(
+    task_id: int,
+    description: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = TaskService(db)
+    time_log = service.start_time_tracking(task_id, current_user.id, description)
+    if not time_log:
+        raise HTTPException(status_code=400, detail="Could not start time tracking")
+    return {"message": "Time tracking started", "time_log_id": time_log.id}
+
+@router.post("/tasks/{task_id}/time/stop")
+async def stop_time_tracking(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = TaskService(db)
+    time_log = service.stop_time_tracking(task_id, current_user.id)
+    if not time_log:
+        raise HTTPException(status_code=400, detail="No active time tracking found")
+    return {"message": "Time tracking stopped", "duration_minutes": time_log.duration_minutes}
+
+@router.get("/kanban")
+async def get_kanban_board(
+    project_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = TaskService(db)
+    return service.get_kanban_board(project_id)
+
+@router.get("/projects/{project_id}/gantt")
+async def get_project_gantt(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = ProjectService(db)
+    gantt_data = service.get_project_gantt_data(project_id)
+    if not gantt_data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return gantt_data

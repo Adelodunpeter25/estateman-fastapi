@@ -23,107 +23,12 @@ import {
 import { useEffect, useState } from "react"
 import { taskService, type Task, type Project } from "@/services/tasks"
 
-const tasks = [
-  {
-    id: "TASK-001",
-    title: "Property Photography - Luxury Villa",
-    description: "Schedule and coordinate professional photography for the waterfront villa listing",
-    assignee: "Sarah Johnson",
-    assigneeInitials: "SJ",
-    dueDate: "2025-02-15",
-    priority: "High",
-    status: "In Progress",
-    progress: 65,
-    project: "Luxury Listings",
-    tags: ["Photography", "Marketing"]
-  },
-  {
-    id: "TASK-002",
-    title: "Client Follow-up - Martinez Property",
-    description: "Follow up with Jennifer Martinez regarding property viewing feedback",
-    assignee: "Mike Chen",
-    assigneeInitials: "MC",
-    dueDate: "2025-02-10",
-    priority: "High",
-    status: "Pending",
-    progress: 0,
-    project: "Client Relations",
-    tags: ["Follow-up", "Sales"]
-  },
-  {
-    id: "TASK-003",
-    title: "Contract Review - Downtown Condo",
-    description: "Review and finalize purchase agreement for downtown condominium",
-    assignee: "Emily Davis",
-    assigneeInitials: "ED",
-    dueDate: "2025-02-12",
-    priority: "Medium",
-    status: "In Progress",
-    progress: 80,
-    project: "Legal & Contracts",
-    tags: ["Contracts", "Legal"]
-  },
-  {
-    id: "TASK-004",
-    title: "Market Analysis Report",
-    description: "Prepare quarterly market analysis for suburban properties",
-    assignee: "James Wilson",
-    assigneeInitials: "JW",
-    dueDate: "2025-02-20",
-    priority: "Medium",
-    status: "Not Started",
-    progress: 0,
-    project: "Market Research",
-    tags: ["Analysis", "Research"]
-  },
-  {
-    id: "TASK-005",
-    title: "Open House Preparation",
-    description: "Organize and prepare open house event for weekend showing",
-    assignee: "Lisa Anderson",
-    assigneeInitials: "LA",
-    dueDate: "2025-02-08",
-    priority: "High",
-    status: "Completed",
-    progress: 100,
-    project: "Events",
-    tags: ["Open House", "Events"]
-  }
-]
-
-const projects = [
-  {
-    id: "1",
-    name: "Luxury Listings",
-    tasksTotal: 12,
-    tasksCompleted: 8,
-    team: ["SJ", "MC", "ED"],
-    deadline: "2025-03-01",
-    status: "On Track"
-  },
-  {
-    id: "2",
-    name: "Client Relations",
-    tasksTotal: 8,
-    tasksCompleted: 5,
-    team: ["MC", "LA"],
-    deadline: "2025-02-15",
-    status: "At Risk"
-  },
-  {
-    id: "3",
-    name: "Market Research",
-    tasksTotal: 6,
-    tasksCompleted: 6,
-    team: ["JW", "ED"],
-    deadline: "2025-02-10",
-    status: "Completed"
-  }
-]
+// Removed hardcoded data - now using API data
 
 const Tasks = () => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [taskStats, setTaskStats] = useState({ total_tasks: 0, completed_tasks: 0, in_progress_tasks: 0, overdue_tasks: 0, completion_rate: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -134,12 +39,14 @@ const Tasks = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [tasksData, projectsData] = await Promise.all([
+      const [tasksData, projectsData, statsData] = await Promise.all([
         taskService.getTasks({ limit: 50 }),
-        taskService.getProjects({ limit: 20 })
+        taskService.getProjects({ limit: 20 }),
+        taskService.getTaskStats()
       ])
       setTasks(tasksData)
       setProjects(projectsData)
+      setTaskStats(statsData)
     } catch (err) {
       setError('Failed to load tasks and projects')
       console.error('Tasks error:', err)
@@ -215,8 +122,8 @@ const Tasks = () => {
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">127</div>
-              <p className="text-xs text-muted-foreground">+8 this week</p>
+              <div className="text-2xl font-bold">{taskStats.total_tasks}</div>
+              <p className="text-xs text-muted-foreground">Total tasks</p>
             </CardContent>
           </Card>
           
@@ -226,8 +133,8 @@ const Tasks = () => {
               <CheckCircle className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">89</div>
-              <p className="text-xs text-muted-foreground">70.1% completion rate</p>
+              <div className="text-2xl font-bold text-success">{taskStats.completed_tasks}</div>
+              <p className="text-xs text-muted-foreground">{taskStats.completion_rate}% completion rate</p>
             </CardContent>
           </Card>
 
@@ -237,7 +144,7 @@ const Tasks = () => {
               <Clock className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">24</div>
+              <div className="text-2xl font-bold text-blue-600">{taskStats.in_progress_tasks}</div>
               <p className="text-xs text-muted-foreground">Active work items</p>
             </CardContent>
           </Card>
@@ -248,7 +155,7 @@ const Tasks = () => {
               <AlertCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-destructive">6</div>
+              <div className="text-2xl font-bold text-destructive">{taskStats.overdue_tasks}</div>
               <p className="text-xs text-muted-foreground">Need attention</p>
             </CardContent>
           </Card>
@@ -330,7 +237,7 @@ const Tasks = () => {
                         </div>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3" />
-                          Due: {task.dueDate}
+                          Due: {task.dueDate || (task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date')}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Project: {task.project}
@@ -349,7 +256,7 @@ const Tasks = () => {
                       
                       <div className="flex items-center justify-between">
                         <div className="flex gap-1">
-                          {task.tags.map((tag, index) => (
+                          {(task.tags || []).map((tag, index) => (
                             <span 
                               key={index}
                               className="px-2 py-1 text-xs bg-muted rounded-md"
@@ -389,7 +296,7 @@ const Tasks = () => {
                       <div>
                         <h4 className="font-semibold">{project.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          Deadline: {project.deadline}
+                          Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
                         </p>
                       </div>
                       <Badge variant="outline" className={getStatusColor(project.status)}>
@@ -400,10 +307,10 @@ const Tasks = () => {
                     <div className="mb-3">
                       <div className="flex justify-between text-sm mb-1">
                         <span>Tasks Completed</span>
-                        <span>{project.tasksCompleted}/{project.tasksTotal}</span>
+                        <span>{project.tasksCompleted || project.tasks_completed || 0}/{project.tasksTotal || project.tasks_total || 0}</span>
                       </div>
                       <Progress 
-                        value={(project.tasksCompleted / project.tasksTotal) * 100} 
+                        value={((project.tasksCompleted || project.tasks_completed || 0) / (project.tasksTotal || project.tasks_total || 1)) * 100} 
                         className="h-2" 
                       />
                     </div>
@@ -411,7 +318,7 @@ const Tasks = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Team:</span>
                       <div className="flex -space-x-1">
-                        {project.team.map((member, index) => (
+                        {(project.team || []).map((member, index) => (
                           <Avatar key={index} className="h-6 w-6 border-2 border-background">
                             <AvatarFallback className="text-xs">{member}</AvatarFallback>
                           </Avatar>

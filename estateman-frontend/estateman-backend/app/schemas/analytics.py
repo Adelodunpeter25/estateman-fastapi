@@ -117,6 +117,8 @@ class BusinessInsightResponse(BaseModel):
 
 # Prediction Model Schemas
 class PredictionModelResponse(BaseModel):
+    model_config = {"protected_namespaces": (), "from_attributes": True}
+    
     id: int
     model_name: str
     model_type: str
@@ -127,9 +129,6 @@ class PredictionModelResponse(BaseModel):
     last_trained: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]
-
-    class Config:
-        from_attributes = True
 
 # Anomaly Detection Schemas
 class AnomalyDetectionResponse(BaseModel):
