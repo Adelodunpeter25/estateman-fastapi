@@ -100,9 +100,10 @@ def get_realtors_dropdown(
     result = []
     for r in realtors:
         if r.user_id and r.realtor_id:
+            name = f"{r.user.first_name} {r.user.last_name}" if r.user else f"Realtor {r.realtor_id}"
             result.append({
                 "id": r.user_id, 
-                "name": r.name or f"Realtor {r.realtor_id}", 
+                "name": name, 
                 "realtor_id": r.realtor_id
             })
     return result
@@ -345,3 +346,49 @@ def get_commission_breakdown(
 ):
     service = CommissionService(db)
     return service.get_commission_breakdown(realtor_id)
+
+@router.get("/{realtor_id}/commissions/statement")
+def generate_commission_statement(
+    realtor_id: int,
+    start_date: str,
+    end_date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from datetime import datetime
+    service = CommissionService(db)
+    start = datetime.fromisoformat(start_date)
+    end = datetime.fromisoformat(end_date)
+    return service.generate_commission_statement(realtor_id, start, end)
+
+@router.get("/{realtor_id}/commissions/forecast")
+def forecast_commission(
+    realtor_id: int,
+    months_ahead: int = Query(3, ge=1, le=12),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.forecast_commission(realtor_id, months_ahead)
+
+@router.put("/commissions/{commission_id}/approve")
+def approve_commission(
+    commission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    commission = service.approve_commission_payout(commission_id, current_user.id)
+    if not commission:
+        raise HTTPException(status_code=404, detail="Commission not found")
+    return {"message": "Commission approved successfully", "commission_id": commission_id}
+
+@router.get("/{realtor_id}/tax-forms/{tax_year}")
+def generate_tax_form(
+    realtor_id: int,
+    tax_year: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CommissionService(db)
+    return service.generate_tax_form_data(realtor_id, tax_year)

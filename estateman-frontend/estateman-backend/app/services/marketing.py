@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from ..core.datetime_utils import utc_now, ensure_timezone_aware
 from ..core.validation import sanitize_html, validate_id
 from ..core.exceptions import NotFoundError, ValidationException
-from ..models.marketing import Campaign, CampaignTemplate, CampaignAnalytics, MarketingMaterial, CampaignStatus, ABTest, CampaignAutomation, AutomationStep
-from ..schemas.marketing import CampaignCreate, CampaignUpdate, CampaignTemplateCreate, MarketingMaterialCreate, ABTestCreate, CampaignAutomationCreate, AutomationStepCreate
+from ..models.marketing import Campaign, CampaignTemplate, CampaignAnalytics, MarketingMaterial, CampaignStatus, ABTest, CampaignAutomation, AutomationStep, DynamicAudienceRule, CampaignOptimization, CampaignMetrics, DripCampaignTemplate, DripCampaignStep
+from ..schemas.marketing import CampaignCreate, CampaignUpdate, CampaignTemplateCreate, MarketingMaterialCreate, ABTestCreate, CampaignAutomationCreate, AutomationStepCreate, DynamicAudienceRuleCreate, DripCampaignTemplateCreate, DripCampaignStepCreate
 
 class MarketingService:
     def __init__(self, db: Session):
@@ -226,3 +226,135 @@ class CampaignAutomationService:
 
     def get_automation_steps(self, automation_id: int) -> List[AutomationStep]:
         return self.db.query(AutomationStep).filter(AutomationStep.automation_id == automation_id).order_by(AutomationStep.step_order).all()
+
+class DynamicAudienceService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_audience_rule(self, rule_data: DynamicAudienceRuleCreate) -> DynamicAudienceRule:
+        rule = DynamicAudienceRule(**rule_data.dict())
+        self.db.add(rule)
+        self.db.commit()
+        self.db.refresh(rule)
+        return rule
+
+    def get_audience_rules(self, skip: int = 0, limit: int = 100) -> List[DynamicAudienceRule]:
+        return self.db.query(DynamicAudienceRule).filter(DynamicAudienceRule.is_active == True).offset(skip).limit(limit).all()
+
+    def get_audience_rule(self, rule_id: int) -> Optional[DynamicAudienceRule]:
+        rule_id = validate_id(rule_id)
+        return self.db.query(DynamicAudienceRule).filter(DynamicAudienceRule.id == rule_id).first()
+
+class CampaignOptimizationService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def generate_optimizations(self, campaign_id: int) -> List[CampaignOptimization]:
+        campaign = self.db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if not campaign:
+            return []
+        
+        optimizations = []
+        
+        # Budget optimization
+        if campaign.budget > 0 and campaign.spent > campaign.budget * 0.8:
+            opt = CampaignOptimization(
+                campaign_id=campaign_id,
+                optimization_type="budget",
+                recommendation="Budget utilization is high. Consider increasing budget or optimizing spend allocation",
+                impact_score=85.0
+            )
+            optimizations.append(opt)
+        
+        # Performance optimization
+        if campaign.total_opens > 0:
+            click_rate = (campaign.total_clicks / campaign.total_opens) * 100
+            if click_rate < 2.0:
+                opt = CampaignOptimization(
+                    campaign_id=campaign_id,
+                    optimization_type="content",
+                    recommendation="Click-through rate is below industry average. Consider A/B testing content variations",
+                    impact_score=70.0
+                )
+                optimizations.append(opt)
+        
+        # Conversion optimization
+        if campaign.total_clicks > 0:
+            conversion_rate = (campaign.total_conversions / campaign.total_clicks) * 100
+            if conversion_rate < 1.0:
+                opt = CampaignOptimization(
+                    campaign_id=campaign_id,
+                    optimization_type="audience",
+                    recommendation="Low conversion rate detected. Review audience targeting and landing page optimization",
+                    impact_score=80.0
+                )
+                optimizations.append(opt)
+        
+        # Timing optimization
+        if campaign.status == CampaignStatus.ACTIVE and campaign.total_reach < 100:
+            opt = CampaignOptimization(
+                campaign_id=campaign_id,
+                optimization_type="timing",
+                recommendation="Low reach detected. Consider adjusting campaign timing or increasing frequency",
+                impact_score=60.0
+            )
+            optimizations.append(opt)
+        
+        for opt in optimizations:
+            self.db.add(opt)
+        
+        self.db.commit()
+        return optimizations
+
+    def get_campaign_optimizations(self, campaign_id: int) -> List[CampaignOptimization]:
+        return self.db.query(CampaignOptimization).filter(CampaignOptimization.campaign_id == campaign_id).all()
+
+class CampaignMetricsService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def record_real_time_metrics(self, campaign_id: int, metrics_data: Dict[str, Any]) -> CampaignMetrics:
+        metrics = CampaignMetrics(
+            campaign_id=campaign_id,
+            active_users=metrics_data.get('active_users', 0),
+            bounce_rate=metrics_data.get('bounce_rate', 0.0),
+            engagement_rate=metrics_data.get('engagement_rate', 0.0),
+            conversion_rate=metrics_data.get('conversion_rate', 0.0)
+        )
+        self.db.add(metrics)
+        self.db.commit()
+        self.db.refresh(metrics)
+        return metrics
+
+    def get_real_time_metrics(self, campaign_id: int, hours: int = 24) -> List[CampaignMetrics]:
+        start_time = utc_now() - timedelta(hours=hours)
+        return self.db.query(CampaignMetrics).filter(
+            and_(
+                CampaignMetrics.campaign_id == campaign_id,
+                CampaignMetrics.timestamp >= start_time
+            )
+        ).order_by(CampaignMetrics.timestamp).all()
+
+class DripCampaignService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create_drip_template(self, template_data: DripCampaignTemplateCreate) -> DripCampaignTemplate:
+        template = DripCampaignTemplate(**template_data.dict())
+        self.db.add(template)
+        self.db.commit()
+        self.db.refresh(template)
+        return template
+
+    def add_drip_step(self, step_data: DripCampaignStepCreate) -> DripCampaignStep:
+        step = DripCampaignStep(**step_data.dict())
+        self.db.add(step)
+        self.db.commit()
+        self.db.refresh(step)
+        return step
+
+    def get_drip_templates(self, skip: int = 0, limit: int = 100) -> List[DripCampaignTemplate]:
+        return self.db.query(DripCampaignTemplate).filter(DripCampaignTemplate.is_active == True).offset(skip).limit(limit).all()
+
+    def get_drip_template_steps(self, template_id: int) -> List[DripCampaignStep]:
+        return self.db.query(DripCampaignStep).filter(DripCampaignStep.template_id == template_id).order_by(DripCampaignStep.step_number).all()

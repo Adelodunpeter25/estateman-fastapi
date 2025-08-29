@@ -648,3 +648,102 @@ class CommissionService:
                 "referral_bonuses": this_month * 0.1
             }
         }
+
+    def generate_commission_statement(self, realtor_id: int, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+        commissions = self.db.query(Commission).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= start_date,
+            Commission.created_at <= end_date
+        ).all()
+        
+        total_gross = sum(c.gross_commission for c in commissions)
+        total_net = sum(c.net_commission for c in commissions)
+        
+        return {
+            "realtor_id": realtor_id,
+            "period": {"start": start_date, "end": end_date},
+            "total_gross_commission": total_gross,
+            "total_net_commission": total_net,
+            "commission_count": len(commissions),
+            "commissions": [
+                {
+                    "id": c.id,
+                    "sale_price": c.sale_price,
+                    "commission_rate": c.commission_rate,
+                    "gross_commission": c.gross_commission,
+                    "net_commission": c.net_commission,
+                    "status": c.status,
+                    "created_at": c.created_at
+                }
+                for c in commissions
+            ]
+        }
+
+    def forecast_commission(self, realtor_id: int, months_ahead: int = 3) -> Dict[str, Any]:
+        three_months_ago = datetime.utcnow() - timedelta(days=90)
+        avg_monthly = self.db.query(func.avg(Commission.net_commission)).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.created_at >= three_months_ago,
+            Commission.status == "paid"
+        ).scalar() or 0
+        
+        active_transactions = self.db.query(Transaction).filter(
+            Transaction.realtor_id == realtor_id,
+            Transaction.status.in_(["under_contract", "financing", "closing_prep"])
+        ).count()
+        
+        projected_monthly = avg_monthly * 1.1 if active_transactions > 0 else avg_monthly
+        
+        forecast = []
+        for i in range(1, months_ahead + 1):
+            future_date = datetime.utcnow() + timedelta(days=30 * i)
+            forecast.append({
+                "month": future_date.strftime("%Y-%m"),
+                "projected_commission": projected_monthly,
+                "confidence": "medium" if i <= 2 else "low"
+            })
+        
+        return {
+            "realtor_id": realtor_id,
+            "historical_average": avg_monthly,
+            "active_deals": active_transactions,
+            "forecast": forecast
+        }
+
+    def approve_commission_payout(self, commission_id: int, approved_by: int) -> Commission:
+        commission = self.db.query(Commission).filter(Commission.id == commission_id).first()
+        if commission:
+            commission.status = "approved"
+            commission.updated_at = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(commission)
+        return commission
+
+    def generate_tax_form_data(self, realtor_id: int, tax_year: int) -> Dict[str, Any]:
+        year_start = datetime(tax_year, 1, 1)
+        year_end = datetime(tax_year, 12, 31)
+        
+        commissions = self.db.query(Commission).filter(
+            Commission.realtor_id == realtor_id,
+            Commission.paid_date >= year_start,
+            Commission.paid_date <= year_end,
+            Commission.status == "paid"
+        ).all()
+        
+        total_earnings = sum(c.net_commission for c in commissions)
+        realtor = self.db.query(Realtor).filter(Realtor.id == realtor_id).first()
+        
+        return {
+            "tax_year": tax_year,
+            "realtor_id": realtor_id,
+            "realtor_name": f"{realtor.user.first_name} {realtor.user.last_name}" if realtor and realtor.user else "Unknown",
+            "total_earnings": total_earnings,
+            "commission_count": len(commissions),
+            "form_1099_data": {
+                "payer_name": "Estateman Real Estate",
+                "payer_tin": "XX-XXXXXXX",
+                "recipient_name": f"{realtor.user.first_name} {realtor.user.last_name}" if realtor and realtor.user else "Unknown",
+                "recipient_tin": "XXX-XX-XXXX",
+                "nonemployee_commission": total_earnings
+            }
+        }

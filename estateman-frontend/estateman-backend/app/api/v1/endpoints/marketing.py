@@ -15,9 +15,13 @@ from ....schemas.marketing import (
     CampaignStatsResponse, CampaignAnalyticsResponse,
     ABTestCreate, ABTestResponse,
     CampaignAutomationCreate, CampaignAutomationResponse,
-    AutomationStepCreate, AutomationStepResponse
+    AutomationStepCreate, AutomationStepResponse,
+    DynamicAudienceRuleCreate, DynamicAudienceRuleResponse,
+    CampaignOptimizationResponse, CampaignMetricsResponse,
+    DripCampaignTemplateCreate, DripCampaignTemplateResponse,
+    DripCampaignStepCreate, DripCampaignStepResponse
 )
-from ....services.marketing import MarketingService, CampaignTemplateService, MarketingMaterialService, ABTestService, CampaignAutomationService
+from ....services.marketing import MarketingService, CampaignTemplateService, MarketingMaterialService, ABTestService, CampaignAutomationService, DynamicAudienceService, CampaignOptimizationService, CampaignMetricsService, DripCampaignService
 
 router = APIRouter()
 
@@ -320,3 +324,91 @@ async def upload_material(
     
     service = MarketingMaterialService(db)
     return service.create_material(material_data, current_user.id)
+
+# Dynamic Audience endpoints
+@router.post("/audience-rules", response_model=DynamicAudienceRuleResponse)
+async def create_audience_rule(
+    rule_data: DynamicAudienceRuleCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DynamicAudienceService(db)
+    return service.create_audience_rule(rule_data)
+
+@router.get("/audience-rules", response_model=List[DynamicAudienceRuleResponse])
+async def get_audience_rules(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DynamicAudienceService(db)
+    return service.get_audience_rules(skip, limit)
+
+# Campaign Optimization endpoints
+@router.post("/campaigns/{campaign_id}/optimize", response_model=List[CampaignOptimizationResponse])
+async def generate_campaign_optimizations(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CampaignOptimizationService(db)
+    return service.generate_optimizations(campaign_id)
+
+@router.get("/campaigns/{campaign_id}/optimizations", response_model=List[CampaignOptimizationResponse])
+async def get_campaign_optimizations(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CampaignOptimizationService(db)
+    return service.get_campaign_optimizations(campaign_id)
+
+# Real-time Metrics endpoints
+@router.get("/campaigns/{campaign_id}/metrics", response_model=List[CampaignMetricsResponse])
+async def get_real_time_metrics(
+    campaign_id: int,
+    hours: int = Query(24, ge=1, le=168),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = CampaignMetricsService(db)
+    return service.get_real_time_metrics(campaign_id, hours)
+
+# Drip Campaign endpoints
+@router.post("/drip-templates", response_model=DripCampaignTemplateResponse)
+async def create_drip_template(
+    template_data: DripCampaignTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DripCampaignService(db)
+    return service.create_drip_template(template_data)
+
+@router.get("/drip-templates", response_model=List[DripCampaignTemplateResponse])
+async def get_drip_templates(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DripCampaignService(db)
+    return service.get_drip_templates(skip, limit)
+
+@router.post("/drip-templates/steps", response_model=DripCampaignStepResponse)
+async def add_drip_step(
+    step_data: DripCampaignStepCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DripCampaignService(db)
+    return service.add_drip_step(step_data)
+
+@router.get("/drip-templates/{template_id}/steps", response_model=List[DripCampaignStepResponse])
+async def get_drip_template_steps(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = DripCampaignService(db)
+    return service.get_drip_template_steps(template_id)

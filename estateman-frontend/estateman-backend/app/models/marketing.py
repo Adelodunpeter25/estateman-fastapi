@@ -62,6 +62,8 @@ class Campaign(Base):
     template = relationship("CampaignTemplate", back_populates="campaigns")
     analytics = relationship("CampaignAnalytics", back_populates="campaign", cascade="all, delete-orphan")
     ab_tests = relationship("ABTest", back_populates="campaign", cascade="all, delete-orphan")
+    optimizations = relationship("CampaignOptimization", back_populates="campaign", cascade="all, delete-orphan")
+    metrics = relationship("CampaignMetrics", back_populates="campaign", cascade="all, delete-orphan")
 
 class CampaignTemplate(Base):
     __tablename__ = "campaign_templates"
@@ -177,3 +179,76 @@ class AutomationStep(Base):
     
     automation = relationship("CampaignAutomation", back_populates="steps")
     campaign = relationship("Campaign")
+
+class DynamicAudienceRule(Base):
+    __tablename__ = "dynamic_audience_rules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    rule_type = Column(String(50), nullable=False)  # property_based, behavior_based, demographic
+    conditions = Column(JSON)  # Complex rule conditions
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class CampaignOptimization(Base):
+    __tablename__ = "campaign_optimizations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    optimization_type = Column(String(50), nullable=False)  # budget, timing, audience, content
+    recommendation = Column(Text, nullable=False)
+    impact_score = Column(Float, default=0.0)  # Predicted impact 0-100
+    status = Column(String(20), default="pending")  # pending, applied, dismissed
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    applied_at = Column(DateTime(timezone=True))
+    
+    campaign = relationship("Campaign")
+
+class CampaignMetrics(Base):
+    __tablename__ = "campaign_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    
+    # Real-time metrics
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    active_users = Column(Integer, default=0)
+    bounce_rate = Column(Float, default=0.0)
+    engagement_rate = Column(Float, default=0.0)
+    conversion_rate = Column(Float, default=0.0)
+    
+    campaign = relationship("Campaign")
+
+class DripCampaignTemplate(Base):
+    __tablename__ = "drip_campaign_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    trigger_event = Column(String(100), nullable=False)  # signup, purchase, property_view
+    total_steps = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    steps = relationship("DripCampaignStep", back_populates="template")
+
+class DripCampaignStep(Base):
+    __tablename__ = "drip_campaign_steps"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("drip_campaign_templates.id"), nullable=False)
+    step_number = Column(Integer, nullable=False)
+    delay_days = Column(Integer, default=0)
+    delay_hours = Column(Integer, default=0)
+    
+    subject = Column(String(255))
+    content = Column(JSON)
+    campaign_type = Column(SQLEnum(CampaignType), default=CampaignType.EMAIL)
+    
+    template = relationship("DripCampaignTemplate", back_populates="steps")

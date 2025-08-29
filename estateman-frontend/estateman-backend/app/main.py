@@ -69,6 +69,10 @@ app.include_router(newsletters.router, prefix="/api/v1/newsletters", tags=["news
 from .api.v1.endpoints import user_management
 app.include_router(user_management.router, prefix="/api/v1/user-management", tags=["user-management"])
 
+# Import and include Transactions router
+from .api.v1.endpoints import transactions
+app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
+
 @app.get("/")
 async def root():
     return {"message": "Estateman API is running"}

@@ -168,3 +168,86 @@ class AutomationStepResponse(AutomationStepBase):
 
     class Config:
         from_attributes = True
+
+# Dynamic Audience Schemas
+class DynamicAudienceRuleBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    rule_type: str = Field(..., max_length=50)
+    conditions: Dict[str, Any]
+
+class DynamicAudienceRuleCreate(DynamicAudienceRuleBase):
+    pass
+
+class DynamicAudienceRuleResponse(DynamicAudienceRuleBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Campaign Optimization Schemas
+class CampaignOptimizationResponse(BaseModel):
+    id: int
+    campaign_id: int
+    optimization_type: str
+    recommendation: str
+    impact_score: float
+    status: str
+    created_at: datetime
+    applied_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Real-time Metrics Schemas
+class CampaignMetricsResponse(BaseModel):
+    id: int
+    campaign_id: int
+    timestamp: datetime
+    active_users: int
+    bounce_rate: float
+    engagement_rate: float
+    conversion_rate: float
+
+    class Config:
+        from_attributes = True
+
+# Drip Campaign Schemas
+class DripCampaignTemplateBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    trigger_event: str = Field(..., max_length=100)
+    total_steps: int = Field(default=1, ge=1)
+
+class DripCampaignTemplateCreate(DripCampaignTemplateBase):
+    pass
+
+class DripCampaignTemplateResponse(DripCampaignTemplateBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+class DripCampaignStepBase(BaseModel):
+    step_number: int = Field(..., ge=1)
+    delay_days: int = Field(default=0, ge=0)
+    delay_hours: int = Field(default=0, ge=0, le=23)
+    subject: Optional[str] = Field(None, max_length=255)
+    content: Dict[str, Any]
+    campaign_type: CampaignType = CampaignType.EMAIL
+
+class DripCampaignStepCreate(DripCampaignStepBase):
+    template_id: int
+
+class DripCampaignStepResponse(DripCampaignStepBase):
+    id: int
+    template_id: int
+
+    class Config:
+        from_attributes = True

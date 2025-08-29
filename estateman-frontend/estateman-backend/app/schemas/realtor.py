@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.models.realtor import RealtorLevel, RealtorStatus
+from app.models.realtor import RealtorLevel, RealtorStatus, TransactionStatus, PaymentStatus, PaymentFrequency
 
 # Realtor Schemas
 class RealtorBase(BaseModel):
@@ -82,6 +82,13 @@ class TransactionBase(BaseModel):
     type: str
     sale_price: Optional[float] = None
     closing_date: Optional[datetime] = None
+    contract_date: Optional[datetime] = None
+    expected_closing_date: Optional[datetime] = None
+    earnest_money: Optional[float] = 0.0
+    financing_contingency: Optional[bool] = True
+    inspection_contingency: Optional[bool] = True
+    appraisal_contingency: Optional[bool] = True
+    notes: Optional[str] = None
 
 class TransactionCreate(TransactionBase):
     realtor_id: int
@@ -89,9 +96,16 @@ class TransactionCreate(TransactionBase):
     client_id: int
 
 class TransactionUpdate(BaseModel):
-    status: Optional[str] = None
+    status: Optional[TransactionStatus] = None
     sale_price: Optional[float] = None
     closing_date: Optional[datetime] = None
+    contract_date: Optional[datetime] = None
+    expected_closing_date: Optional[datetime] = None
+    earnest_money: Optional[float] = None
+    financing_contingency: Optional[bool] = None
+    inspection_contingency: Optional[bool] = None
+    appraisal_contingency: Optional[bool] = None
+    notes: Optional[str] = None
 
 class TransactionResponse(TransactionBase):
     id: int
@@ -99,7 +113,140 @@ class TransactionResponse(TransactionBase):
     realtor_id: int
     property_id: int
     client_id: int
+    status: TransactionStatus
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Transaction Milestone Schemas
+class TransactionMilestoneBase(BaseModel):
+    milestone_type: str
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to: Optional[int] = None
+    notes: Optional[str] = None
+
+class TransactionMilestoneCreate(TransactionMilestoneBase):
+    transaction_id: int
+
+class TransactionMilestoneUpdate(BaseModel):
+    status: Optional[str] = None
+    completed_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class TransactionMilestoneResponse(TransactionMilestoneBase):
+    id: int
+    transaction_id: int
     status: str
+    completed_date: Optional[datetime]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Transaction Document Schemas
+class TransactionDocumentBase(BaseModel):
+    document_type: str
+    document_name: str
+    file_url: str
+    file_size: Optional[int] = None
+    requires_signature: Optional[bool] = False
+
+class TransactionDocumentCreate(TransactionDocumentBase):
+    transaction_id: int
+    uploaded_by: int
+
+class TransactionDocumentResponse(TransactionDocumentBase):
+    id: int
+    transaction_id: int
+    uploaded_by: int
+    signed_date: Optional[datetime]
+    signed_by: Optional[int]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Installment Plan Schemas
+class InstallmentPlanBase(BaseModel):
+    plan_name: str
+    total_amount: float
+    down_payment: Optional[float] = 0.0
+    installment_amount: float
+    frequency: PaymentFrequency
+    total_installments: int
+    interest_rate: Optional[float] = 0.0
+    late_fee_percentage: Optional[float] = 0.05
+    grace_period_days: Optional[int] = 5
+    start_date: datetime
+
+class InstallmentPlanCreate(InstallmentPlanBase):
+    transaction_id: int
+
+class InstallmentPlanResponse(InstallmentPlanBase):
+    id: int
+    transaction_id: int
+    status: str
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Installment Payment Schemas
+class InstallmentPaymentBase(BaseModel):
+    installment_number: int
+    due_date: datetime
+    amount_due: float
+    notes: Optional[str] = None
+
+class InstallmentPaymentCreate(InstallmentPaymentBase):
+    plan_id: int
+
+class InstallmentPaymentUpdate(BaseModel):
+    amount_paid: Optional[float] = None
+    payment_method: Optional[str] = None
+    payment_reference: Optional[str] = None
+    notes: Optional[str] = None
+
+class InstallmentPaymentResponse(InstallmentPaymentBase):
+    id: int
+    plan_id: int
+    amount_paid: float
+    late_fee: float
+    payment_date: Optional[datetime]
+    payment_method: Optional[str]
+    payment_reference: Optional[str]
+    status: PaymentStatus
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+# Commission Dispute Schemas
+class CommissionDisputeBase(BaseModel):
+    dispute_reason: str
+    description: str
+    disputed_amount: Optional[float] = None
+
+class CommissionDisputeCreate(CommissionDisputeBase):
+    commission_id: int
+    raised_by: int
+
+class CommissionDisputeResponse(CommissionDisputeBase):
+    id: int
+    commission_id: int
+    raised_by: int
+    status: str
+    resolution: Optional[str]
+    resolved_by: Optional[int]
+    resolved_at: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]
 
