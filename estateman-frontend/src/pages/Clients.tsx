@@ -63,7 +63,19 @@ const Clients = () => {
       setRealtors(realtorsData)
     } catch (error: any) {
       console.error('Error loading realtors:', error)
-      if (error?.response?.status === 404) {
+      console.error('Error details:', error?.response?.data)
+      
+      // Handle different error types
+      if (error?.response?.status === 404 || error?.response?.status === 422) {
+        setRealtors([])
+      } else {
+        // Log full error for debugging
+        console.error('Full error object:', {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          config: error?.config
+        })
         setRealtors([])
       }
     }

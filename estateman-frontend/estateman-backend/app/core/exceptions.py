@@ -3,7 +3,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import ValidationError
 import logging
+import traceback
+import uuid
+from datetime import datetime
 
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class AppException(Exception):
@@ -35,39 +43,95 @@ class ForbiddenError(AppException):
 
 async def app_exception_handler(request: Request, exc: AppException):
     """Handle application exceptions"""
-    logger.error(f"Application error: {exc.message}")
+    error_id = str(uuid.uuid4())
+    logger.error(
+        f"Application error [{error_id}]: {exc.message}",
+        extra={
+            "error_id": error_id,
+            "path": request.url.path,
+            "method": request.method,
+            "user_agent": request.headers.get("user-agent"),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.message, "type": "application_error"}
+        content={
+            "detail": exc.message, 
+            "type": "application_error",
+            "error_id": error_id
+        }
     )
 
 async def validation_exception_handler(request: Request, exc: ValidationError):
     """Handle Pydantic validation errors"""
-    logger.error(f"Validation error: {exc}")
+    error_id = str(uuid.uuid4())
+    logger.error(
+        f"Validation error [{error_id}]: {exc}",
+        extra={
+            "error_id": error_id,
+            "path": request.url.path,
+            "method": request.method,
+            "errors": exc.errors()
+        }
+    )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": "Validation error", "errors": exc.errors()}
+        content={
+            "detail": "Validation error", 
+            "errors": exc.errors(),
+            "error_id": error_id
+        }
     )
 
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     """Handle SQLAlchemy database errors"""
-    logger.error(f"Database error: {exc}")
+    error_id = str(uuid.uuid4())
+    logger.error(
+        f"Database error [{error_id}]: {exc}",
+        extra={
+            "error_id": error_id,
+            "path": request.url.path,
+            "method": request.method,
+            "exception_type": type(exc).__name__
+        }
+    )
     
     if isinstance(exc, IntegrityError):
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
-            content={"detail": "Data integrity constraint violation"}
+            content={
+                "detail": "Data integrity constraint violation",
+                "error_id": error_id
+            }
         )
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Database operation failed"}
+        content={
+            "detail": "Database operation failed",
+            "error_id": error_id
+        }
     )
 
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions"""
-    logger.error(f"Unexpected error: {exc}", exc_info=True)
+    error_id = str(uuid.uuid4())
+    logger.error(
+        f"Unexpected error [{error_id}]: {exc}",
+        extra={
+            "error_id": error_id,
+            "path": request.url.path,
+            "method": request.method,
+            "exception_type": type(exc).__name__,
+            "traceback": traceback.format_exc()
+        },
+        exc_info=True
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error"}
+        content={
+            "detail": "Internal server error",
+            "error_id": error_id
+        }
     )

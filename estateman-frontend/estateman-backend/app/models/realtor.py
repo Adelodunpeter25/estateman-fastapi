@@ -47,6 +47,10 @@ class Realtor(Base):
     level = Column(Enum(RealtorLevel), default=RealtorLevel.JUNIOR)
     status = Column(Enum(RealtorStatus), default=RealtorStatus.ACTIVE)
     
+    # Team hierarchy
+    team_id = Column(Integer, ForeignKey("realtor_teams.id"), nullable=True)
+    manager_id = Column(Integer, ForeignKey("realtors.id"), nullable=True)
+    
     # Performance metrics
     total_clients = Column(Integer, default=0)
     active_deals = Column(Integer, default=0)
@@ -55,11 +59,20 @@ class Realtor(Base):
     monthly_earned = Column(Float, default=0.0)
     rating = Column(Float, default=0.0)
     
+    # Enhanced performance tracking
+    ytd_commissions = Column(Float, default=0.0)
+    avg_deal_size = Column(Float, default=0.0)
+    conversion_rate = Column(Float, default=0.0)
+    client_satisfaction = Column(Float, default=0.0)
+    response_time_hours = Column(Float, default=24.0)
+    
     # Professional details
     specialties = Column(JSON)  # Array of specialties
     location = Column(String(255))
     license_number = Column(String(100))
     license_expiry = Column(DateTime(timezone=True))
+    bio = Column(Text)
+    achievements = Column(JSON)  # Array of achievements
     
     # Commission structure
     commission_rate = Column(Float, default=0.03)  # 3% default
@@ -74,6 +87,10 @@ class Realtor(Base):
     user = relationship("User", back_populates="realtor_profile")
     commissions = relationship("Commission", back_populates="realtor", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="realtor", cascade="all, delete-orphan")
+    team = relationship("RealtorTeam", foreign_keys=[team_id], back_populates="members")
+    manager = relationship("Realtor", remote_side=[id], foreign_keys=[manager_id], back_populates="team_members")
+    team_members = relationship("Realtor", foreign_keys=[manager_id], back_populates="manager")
+    performance_reviews = relationship("PerformanceReview", back_populates="realtor", cascade="all, delete-orphan")
 
 class Commission(Base):
     __tablename__ = "commissions"
@@ -235,3 +252,120 @@ class CommissionDispute(Base):
     resolved_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class RealtorTeam(Base):
+    __tablename__ = "realtor_teams"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    team_lead_id = Column(Integer, ForeignKey("realtors.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True)
+    
+    # Team metrics
+    total_members = Column(Integer, default=0)
+    team_target = Column(Float, default=0.0)
+    team_earned = Column(Float, default=0.0)
+    
+    # Team settings
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    team_lead = relationship("Realtor", foreign_keys=[team_lead_id])
+    members = relationship("Realtor", foreign_keys="Realtor.team_id", back_populates="team")
+    tenant = relationship("Tenant")
+
+class PerformanceReview(Base):
+    __tablename__ = "performance_reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    realtor_id = Column(Integer, ForeignKey("realtors.id"), nullable=False)
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Review period
+    review_period_start = Column(DateTime(timezone=True), nullable=False)
+    review_period_end = Column(DateTime(timezone=True), nullable=False)
+    
+    # Performance scores (1-5 scale)
+    sales_performance = Column(Float, default=0.0)
+    client_satisfaction = Column(Float, default=0.0)
+    teamwork = Column(Float, default=0.0)
+    communication = Column(Float, default=0.0)
+    professionalism = Column(Float, default=0.0)
+    overall_score = Column(Float, default=0.0)
+    
+    # Review content
+    strengths = Column(Text)
+    areas_for_improvement = Column(Text)
+    goals = Column(JSON)  # Array of goals
+    comments = Column(Text)
+    
+    # Status
+    status = Column(String(20), default="draft")  # draft, submitted, approved
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    realtor = relationship("Realtor", back_populates="performance_reviews")
+    reviewer = relationship("User", foreign_keys=[reviewer_id])
+
+class RealtorGoal(Base):
+    __tablename__ = "realtor_goals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    realtor_id = Column(Integer, ForeignKey("realtors.id"), nullable=False)
+    
+    # Goal details
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    goal_type = Column(String(50), nullable=False)  # sales, clients, training, etc.
+    target_value = Column(Float, nullable=False)
+    current_value = Column(Float, default=0.0)
+    unit = Column(String(20))  # dollars, clients, deals, etc.
+    
+    # Timeline
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    target_date = Column(DateTime(timezone=True), nullable=False)
+    completed_date = Column(DateTime(timezone=True))
+    
+    # Status
+    status = Column(String(20), default="active")  # active, completed, cancelled
+    priority = Column(String(20), default="medium")  # low, medium, high
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    realtor = relationship("Realtor")
+
+class TeamActivity(Base):
+    __tablename__ = "team_activities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("realtor_teams.id"), nullable=False)
+    activity_type = Column(String(50), nullable=False)  # meeting, training, event
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    
+    # Scheduling
+    scheduled_date = Column(DateTime(timezone=True), nullable=False)
+    duration_minutes = Column(Integer, default=60)
+    location = Column(String(255))
+    is_virtual = Column(Boolean, default=False)
+    meeting_link = Column(String(500))
+    
+    # Attendance
+    required_attendance = Column(Boolean, default=False)
+    attendees = Column(JSON)  # Array of user IDs
+    
+    # Status
+    status = Column(String(20), default="scheduled")  # scheduled, completed, cancelled
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    team = relationship("RealtorTeam")
+    creator = relationship("User", foreign_keys=[created_by])

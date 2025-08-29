@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
 from .api.v1.endpoints import auth
@@ -11,14 +12,21 @@ from .core.exceptions import (
 from .core.websocket import manager
 from .api.deps import get_current_user_websocket
 import json
+from pathlib import Path
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter, analytics, task, event, gamification, notification, integration
+from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter, analytics, task, event, gamification, notification, integration, tenant, document
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Estateman API", version="1.0.0")
+app = FastAPI(
+    title="Estateman API",
+    description="Complete Real Estate Management System API",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 # Add exception handlers
 app.add_exception_handler(AppException, app_exception_handler)
@@ -99,6 +107,23 @@ app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["
 # Import and include Integrations router
 from .api.v1.endpoints import integrations
 app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["integrations"])
+
+# Import and include Files router
+from .api.v1.endpoints import files
+app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+
+# Import and include Team Management router
+from .api.v1.endpoints import team_management
+app.include_router(team_management.router, prefix="/api/v1/teams", tags=["team-management"])
+
+# Import and include Tenant Billing router
+from .api.v1.endpoints import tenant_billing
+app.include_router(tenant_billing.router, prefix="/api/v1/billing", tags=["tenant-billing"])
+
+# Mount static files for uploads
+upload_dir = Path("uploads")
+upload_dir.mkdir(exist_ok=True)
+app.mount("/files", StaticFiles(directory="uploads"), name="files")
 
 # WebSocket endpoint for real-time notifications
 @app.websocket("/ws/{user_id}")

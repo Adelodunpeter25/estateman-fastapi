@@ -15,6 +15,7 @@ from app.schemas.realtor import (
     ClientPortfolio, ActivityLog
 )
 from app.services.realtor import RealtorService, CommissionService
+from app.services.team_management import TeamManagementService, PerformanceManagementService
 
 router = APIRouter()
 
@@ -92,21 +93,12 @@ def get_realtors_dropdown(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    service = RealtorService(db)
-    realtors = service.get_realtors(0, 100, None, None, search)
-    if not realtors:
+    try:
+        service = RealtorService(db)
+        realtors = service.get_realtors_for_dropdown(search)
+        return realtors
+    except Exception as e:
         return []
-    
-    result = []
-    for r in realtors:
-        if r.user_id and r.realtor_id:
-            name = f"{r.user.first_name} {r.user.last_name}" if r.user else f"Realtor {r.realtor_id}"
-            result.append({
-                "id": r.user_id, 
-                "name": name, 
-                "realtor_id": r.realtor_id
-            })
-    return result
 
 @router.get("/performance/{realtor_id}")
 def get_realtor_performance(
@@ -392,3 +384,43 @@ def generate_tax_form(
 ):
     service = CommissionService(db)
     return service.generate_tax_form_data(realtor_id, tax_year)
+
+# Enhanced Team Management endpoints
+@router.get("/{realtor_id}/team-info")
+def get_realtor_team_info(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get team information for a realtor"""
+    team_service = TeamManagementService(db)
+    realtor_service = RealtorService(db)
+    
+    realtor = realtor_service.get_realtor(realtor_id)
+    if not realtor or not realtor.team_id:
+        return {"team": None, "role": "individual"}
+    
+    team = team_service.get_team_by_id(realtor.team_id)
+    team_hierarchy = team_service.get_team_hierarchy(realtor.team_id)
+    
+    return {
+        "team": team,
+        "hierarchy": team_hierarchy,
+        "role": "team_lead" if team.team_lead_id == realtor_id else "member"
+    }
+
+@router.get("/{realtor_id}/performance-reviews")
+def get_realtor_performance_reviews(
+    realtor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get performance reviews for a realtor"""
+    service = PerformanceManagementService(db)
+    reviews = service.get_realtor_reviews(realtor_id)
+    trends = service.get_performance_trends(realtor_id)
+    
+    return {
+        "reviews": reviews,
+        "trends": trends
+    }

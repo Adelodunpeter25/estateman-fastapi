@@ -1,0 +1,15 @@
+Instructions
+
+After installation, run the patch.sh script in the _crack directory:
+
+* Launch Terminal in the _crack directory. To do this, right-click on the _crack folder in Finder and select "New Terminal at Folder Address" from the context menu.
+
+* Enter or copy the command
+bash ./patch.sh
+and press Enter.
+
+* When prompted for a password (the Password: line and the key symbol), enter the password of the current user with whom you are logged in.
+* If the script runs successfully, you will see the message "All files patched successfully" in the last line of the output.
+* The application is ready for use.
+
+After updating to a new beta version (for example, from beta 19 to the release of 20, etc.), you must re-run the patch.sh script according to the instructions!

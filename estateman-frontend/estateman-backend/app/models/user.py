@@ -38,3 +38,4 @@ class User(Base):
     properties = relationship("Property", back_populates="agent")
     assigned_clients = relationship("Client", back_populates="assigned_agent")
     realtor_profile = relationship("Realtor", back_populates="user", uselist=False)
+    uploaded_documents = relationship("Document", back_populates="uploader")

@@ -1,4 +1,5 @@
 import { api } from './api'
+import { filesService } from './files'
 
 export interface Property {
   id: number
@@ -164,10 +165,12 @@ export const propertiesService = {
 
   // Bulk Import
   async bulkImportProperties(file: File): Promise<{ created_count: number; failed_count: number; errors: string[] }> {
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await api.post('/properties/bulk-import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    // First upload the file
+    const uploadResult = await filesService.uploadFile(file, 'documents', 'imports')
+    
+    // Then process the import
+    const response = await api.post('/properties/bulk-import', {
+      file_path: uploadResult.file_path
     })
     return response.data
   },
@@ -218,15 +221,19 @@ export const propertiesService = {
 
   // Image Upload
   async uploadPropertyImages(propertyId: number, images: File[]): Promise<any> {
-    const formData = new FormData()
-    images.forEach((image, index) => {
-      formData.append('images', image)
-      formData.append(`is_primary_${index}`, index === 0 ? 'true' : 'false')
-    })
+    const uploadResults = await filesService.uploadFiles(images, 'images', `property_${propertyId}`)
     
-    const response = await api.post(`/properties/${propertyId}/upload-images`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    return response.data
+    // Add uploaded images to property
+    const imagePromises = uploadResults.files
+      .filter(result => 'url' in result)
+      .map((result, index) => 
+        this.addPropertyImage(propertyId, {
+          image_url: (result as any).url,
+          is_primary: index === 0,
+          order_index: index
+        })
+      )
+    
+    return Promise.all(imagePromises)
   }
 }

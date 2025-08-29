@@ -143,14 +143,21 @@ class RealtorService:
             "level": realtor.level.value,
             "status": realtor.status.value,
             "rating": realtor.rating,
-            "bio": f"Experienced {realtor.level.value} specializing in {', '.join(realtor.specialties or [])}",
+            "bio": realtor.bio or f"Experienced {realtor.level.value} specializing in {', '.join(realtor.specialties or [])}",
             "specialties": realtor.specialties or [],
-            "achievements": [],
+            "achievements": realtor.achievements or [],
             "total_clients": realtor.total_clients,
             "active_deals": realtor.active_deals,
             "total_commissions": realtor.total_commissions,
             "monthly_target": realtor.monthly_target,
-            "monthly_earned": realtor.monthly_earned
+            "monthly_earned": realtor.monthly_earned,
+            "ytd_commissions": realtor.ytd_commissions,
+            "avg_deal_size": realtor.avg_deal_size,
+            "conversion_rate": realtor.conversion_rate,
+            "client_satisfaction": realtor.client_satisfaction,
+            "response_time_hours": realtor.response_time_hours,
+            "team_id": realtor.team_id,
+            "manager_id": realtor.manager_id
         }
 
     def get_realtor_clients(self, realtor_id: int) -> List[Dict[str, Any]]:
@@ -421,6 +428,44 @@ class RealtorService:
             "points_this_month": 2450,
             "achievement_level": "Elite"
         }
+    
+    def get_realtors_for_dropdown(self, search: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get realtors for dropdown with proper user relationship loading"""
+        from sqlalchemy.orm import joinedload
+        
+        query = self.db.query(Realtor).options(joinedload(Realtor.user)).filter(
+            Realtor.status == RealtorStatus.ACTIVE
+        )
+        
+        if search:
+            search_filter = or_(
+                User.first_name.ilike(f"%{search}%"),
+                User.last_name.ilike(f"%{search}%"),
+                User.email.ilike(f"%{search}%"),
+                Realtor.realtor_id.ilike(f"%{search}%")
+            )
+            query = query.join(User).filter(search_filter)
+        
+        realtors = query.limit(100).all()
+        
+        result = []
+        for r in realtors:
+            try:
+                if r.user_id and r.realtor_id and r.user:
+                    name = f"{r.user.first_name or ''} {r.user.last_name or ''}".strip()
+                    if not name:
+                        name = f"Realtor {r.realtor_id}"
+                    
+                    result.append({
+                        "id": r.user_id,
+                        "name": name,
+                        "realtor_id": r.realtor_id
+                    })
+            except Exception:
+                # Skip realtors with missing data
+                continue
+        
+        return result
 
 class CommissionService:
     def __init__(self, db: Session):

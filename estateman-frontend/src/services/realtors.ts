@@ -173,8 +173,23 @@ class RealtorsService {
   }
 
   async getRealtorsDropdown(search?: string): Promise<Array<{id: number, name: string, realtor_id: string}>> {
-    const response = await api.get('/realtors/dropdown', { params: { search } });
-    return response.data;
+    try {
+      console.log('Fetching realtors dropdown with search:', search);
+      const response = await api.get('/realtors/dropdown', { params: search ? { search } : {} });
+      console.log('Realtors dropdown response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Realtors dropdown error:', {
+        message: error?.message,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        url: error?.config?.url,
+        method: error?.config?.method,
+        params: error?.config?.params
+      });
+      throw error;
+    }
   }
 }
 
