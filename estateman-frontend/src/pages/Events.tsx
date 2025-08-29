@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Calendar, 
   Clock, 
@@ -247,9 +248,16 @@ const Events = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Event List */}
-          <div className="lg:col-span-2">
+        <Tabs defaultValue="list" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Event List */}
+              <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -405,6 +413,52 @@ const Events = () => {
             </Card>
           </div>
         </div>
+      </TabsContent>
+
+          <TabsContent value="calendar">
+            <Card>
+              <CardHeader>
+                <CardTitle>Calendar View</CardTitle>
+                <CardDescription>Monthly calendar with events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                    <div key={day} className="p-2 text-center font-medium text-sm text-muted-foreground">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {Array.from({ length: 35 }, (_, i) => {
+                    const day = i - 6 + 1
+                    const isCurrentMonth = day > 0 && day <= 28
+                    const hasEvent = isCurrentMonth && [8, 12, 15, 18, 20, 25].includes(day)
+                    
+                    return (
+                      <div key={i} className={`min-h-[80px] p-2 border rounded ${
+                        isCurrentMonth ? 'bg-background' : 'bg-muted/30'
+                      }`}>
+                        {isCurrentMonth && (
+                          <>
+                            <div className="text-sm font-medium mb-1">{day}</div>
+                            {hasEvent && (
+                              <div className="space-y-1">
+                                <div className="text-xs bg-primary text-primary-foreground px-1 py-0.5 rounded truncate">
+                                  Event
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   )

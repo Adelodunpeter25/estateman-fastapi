@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import auth, dashboard, properties, rbac, clients, realtors, mlm, analytics, marketing, newsletters, transactions, user_management, tasks, events, notifications
+from .endpoints import auth, dashboard, properties, rbac, clients, realtors, mlm, analytics, marketing, newsletters, transactions, user_management, tasks, events, notifications, gamification
 
 api_router = APIRouter()
 
@@ -18,3 +18,4 @@ api_router.include_router(user_management.router, prefix="/users", tags=["user_m
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(gamification.router, prefix="/gamification", tags=["gamification"])

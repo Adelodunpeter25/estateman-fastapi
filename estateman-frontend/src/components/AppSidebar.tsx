@@ -40,7 +40,6 @@ import {
 // Icon mapping for dynamic navigation
 const ICON_MAP: Record<string, any> = {
   "/dashboard": LayoutDashboard,
-  "/analytics": BarChart3,
   "/saas-management": Cloud,
   "/realtors": UserCheck,
   "/clients": Users,

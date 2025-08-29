@@ -11,7 +11,7 @@ import { AppStoreProvider } from "@/store/app-store";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import SaasManagement from "./pages/SaasManagement";
-import Analytics from "./pages/Analytics";
+
 import Realtors from "./pages/Realtors";
 import RealtorDetail from "./pages/RealtorDetail";
 import Clients from "./pages/Clients";
@@ -56,7 +56,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/saas-management" element={<ProtectedRoute><SaasManagement /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+
               <Route path="/realtors" element={<ProtectedRoute><Realtors /></ProtectedRoute>} />
               <Route path="/realtors/:id" element={<ProtectedRoute><RealtorDetail /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />

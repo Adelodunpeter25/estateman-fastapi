@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   CheckSquare, 
   Clock, 
@@ -253,9 +254,16 @@ const Tasks = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Task List */}
-          <div className="lg:col-span-2">
+        <Tabs defaultValue="list" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="kanban">Kanban Board</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Task List */}
+              <div className="lg:col-span-2">
             <Card>
               <CardHeader>
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -413,10 +421,57 @@ const Tasks = () => {
                   </div>
                   ))
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              </CardContent>
+            </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="kanban">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {['Not Started', 'In Progress', 'Pending', 'Completed'].map((status) => (
+                <Card key={status} className="min-h-[500px]">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium flex items-center justify-between">
+                      {status}
+                      <Badge variant="outline">
+                        {tasks.filter(task => task.status === status).length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {tasks.filter(task => task.status === status).map((task) => (
+                        <Card key={task.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">{task.title}</h4>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                                {task.priority}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground">
+                                {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
+                              </div>
+                            </div>
+                            {task.progress > 0 && (
+                              <Progress value={task.progress} className="h-1" />
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                      {tasks.filter(task => task.status === status).length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          No {status.toLowerCase()} tasks
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   )

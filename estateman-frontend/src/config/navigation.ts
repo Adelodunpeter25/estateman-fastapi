@@ -1,7 +1,6 @@
 // Navigation configuration with dynamic permission requirements
 export const NAVIGATION_CONFIG = {
   // Overview
-  "/analytics": "analytics:read",
   "/saas-management": "settings:update",
   
   // Management

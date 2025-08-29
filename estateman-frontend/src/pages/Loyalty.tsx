@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,51 +15,63 @@ import {
   Crown,
   Zap,
   Target,
-  Calendar
+  Calendar,
+  RefreshCw
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { gamificationService, type GamificationStats, type MemberTierStats, type Reward } from "@/services/gamification"
 
 const Loyalty = () => {
-  const loyaltyStats = [
-    { label: "Active Members", value: "2,847", change: "+156", icon: Users },
-    { label: "Points Distributed", value: "15.2M", change: "+2.1M", icon: Zap },
-    { label: "Rewards Claimed", value: "1,203", change: "+87", icon: Gift },
-    { label: "Engagement Rate", value: "78.4%", change: "+5.2%", icon: TrendingUp }
-  ]
+  const [stats, setStats] = useState<GamificationStats | null>(null)
+  const [tierStats, setTierStats] = useState<MemberTierStats[]>([])
+  const [rewards, setRewards] = useState<Reward[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const memberTiers = [
-    { 
-      name: "Bronze", 
-      members: 1247, 
-      percentage: 44, 
-      color: "bg-orange-500",
-      benefits: "5% cashback, Basic support",
-      pointsRequired: "0 - 999"
-    },
-    { 
-      name: "Silver", 
-      members: 892, 
-      percentage: 31, 
-      color: "bg-gray-400",
-      benefits: "10% cashback, Priority support",
-      pointsRequired: "1,000 - 4,999"
-    },
-    { 
-      name: "Gold", 
-      members: 534, 
-      percentage: 19, 
-      color: "bg-gold",
-      benefits: "15% cashback, VIP support, Exclusive events",
-      pointsRequired: "5,000 - 14,999"
-    },
-    { 
-      name: "Platinum", 
-      members: 174, 
-      percentage: 6, 
-      color: "bg-purple-500",
-      benefits: "20% cashback, Personal advisor, Premium perks",
-      pointsRequired: "15,000+"
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [statsData, tierData, rewardsData] = await Promise.all([
+        gamificationService.getStats(),
+        gamificationService.getTierDistribution(),
+        gamificationService.getRewards({ limit: 20 })
+      ])
+      setStats(statsData)
+      setTierStats(tierData)
+      setRewards(rewardsData)
+    } catch (err) {
+      setError('Failed to load gamification data')
+      console.error('Gamification error:', err)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+  const loyaltyStats = stats ? [
+    { label: "Active Members", value: stats.active_members.toLocaleString(), change: "+0", icon: Users },
+    { label: "Points Distributed", value: (stats.points_distributed / 1000000).toFixed(1) + "M", change: "+0", icon: Zap },
+    { label: "Rewards Claimed", value: stats.rewards_claimed.toLocaleString(), change: "+0", icon: Gift },
+    { label: "Engagement Rate", value: stats.engagement_rate + "%", change: "+0%", icon: TrendingUp }
+  ] : []
+
+  const memberTiers = tierStats.map(tier => ({
+    name: tier.tier.charAt(0).toUpperCase() + tier.tier.slice(1),
+    members: tier.member_count,
+    percentage: tier.percentage,
+    color: tier.tier === 'bronze' ? 'bg-orange-500' : 
+           tier.tier === 'silver' ? 'bg-gray-400' :
+           tier.tier === 'gold' ? 'bg-yellow-500' : 'bg-purple-500',
+    benefits: tier.tier === 'bronze' ? '5% cashback, Basic support' :
+              tier.tier === 'silver' ? '10% cashback, Priority support' :
+              tier.tier === 'gold' ? '15% cashback, VIP support, Exclusive events' :
+              '20% cashback, Personal advisor, Premium perks',
+    pointsRequired: tier.tier === 'bronze' ? '0 - 999' :
+                    tier.tier === 'silver' ? '1,000 - 4,999' :
+                    tier.tier === 'gold' ? '5,000 - 14,999' : '15,000+'
+  }))
 
   const topMembers = [
     { name: "Sarah Johnson", points: 24500, tier: "Platinum", avatar: "SJ", deals: 12 },
@@ -78,13 +89,12 @@ const Loyalty = () => {
     { user: "Emma Davis", action: "Earned 300 points", detail: "Monthly activity bonus", time: "3 days ago" }
   ]
 
-  const availableRewards = [
-    { name: "Premium Marketing Package", cost: 2500, category: "Marketing", claimed: 45 },
-    { name: "Professional Photography", cost: 1500, category: "Services", claimed: 78 },
-    { name: "Luxury Gift Hamper", cost: 1000, category: "Gifts", claimed: 123 },
-    { name: "Training Workshop Access", cost: 3000, category: "Education", claimed: 34 },
-    { name: "Exclusive Event Ticket", cost: 2000, category: "Events", claimed: 56 }
-  ]
+  const availableRewards = rewards.map(reward => ({
+    name: reward.name,
+    cost: reward.points_cost,
+    category: reward.category,
+    claimed: reward.total_claimed
+  }))
 
   return (
     <DashboardLayout>
@@ -98,6 +108,10 @@ const Loyalty = () => {
             <p className="text-muted-foreground">Reward and engage your real estate team</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={loadData} disabled={loading} variant="outline">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Button variant="outline">
               <Gift className="h-4 w-4 mr-2" />
               Add Reward
@@ -110,26 +124,32 @@ const Loyalty = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {loyaltyStats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
+        {loading ? (
+          <div className="text-center py-8">Loading gamification data...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">{error}</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {loyaltyStats.map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <stat.icon className="h-8 w-8 text-primary mb-2" />
+                      <Badge variant="outline" className="text-xs">
+                        {stat.change}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <stat.icon className="h-8 w-8 text-primary mb-2" />
-                    <Badge variant="outline" className="text-xs">
-                      {stat.change}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
@@ -244,26 +264,32 @@ const Loyalty = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableRewards.map((reward, index) => (
-                    <Card key={index} className="border">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline">{reward.category}</Badge>
-                            <div className="flex items-center gap-1 text-gold">
-                              <Target className="h-4 w-4" />
-                              <span className="font-semibold">{reward.cost}</span>
+                  {availableRewards.length === 0 ? (
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                      No rewards available
+                    </div>
+                  ) : (
+                    availableRewards.map((reward, index) => (
+                      <Card key={index} className="border">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline">{reward.category}</Badge>
+                              <div className="flex items-center gap-1 text-gold">
+                                <Target className="h-4 w-4" />
+                                <span className="font-semibold">{reward.cost}</span>
+                              </div>
+                            </div>
+                            <h4 className="font-medium">{reward.name}</h4>
+                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                              <span>Claimed {reward.claimed} times</span>
+                              <Button size="sm" variant="outline">Edit</Button>
                             </div>
                           </div>
-                          <h4 className="font-medium">{reward.name}</h4>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <span>Claimed {reward.claimed} times</span>
-                            <Button size="sm" variant="outline">Edit</Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
