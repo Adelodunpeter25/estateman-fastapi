@@ -15,8 +15,35 @@ import {
   Quote
 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { analyticsService } from "@/services/analytics"
 
 const Landing = () => {
+  const [analyticsData, setAnalyticsData] = useState({
+    salesToday: 0,
+    newLeads: 0,
+    dealsClosed: 0,
+    targetMet: 0
+  })
+
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      try {
+        const data = await analyticsService.getDashboardAnalytics(1) // Get today's data
+        setAnalyticsData({
+          salesToday: data.total_events || 0,
+          newLeads: data.unique_users || 0,
+          dealsClosed: Math.floor(data.conversion_rate * 100) || 0,
+          targetMet: Math.min(100, Math.floor(data.page_views / 10)) || 0
+        })
+      } catch (error) {
+        // Keep default values if API fails
+        console.error('Failed to fetch analytics data:', error)
+      }
+    }
+
+    fetchAnalyticsData()
+  }, [])
   const features = [
     {
       icon: Building2,
@@ -201,20 +228,20 @@ const Landing = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/10 rounded-lg p-4">
-                      <div className="text-2xl font-bold">$2.4M</div>
-                      <div className="text-sm opacity-90">Sales Today</div>
+                      <div className="text-2xl font-bold">{analyticsData.salesToday}</div>
+                      <div className="text-sm opacity-90">Events Today</div>
                     </div>
                     <div className="bg-white/10 rounded-lg p-4">
-                      <div className="text-2xl font-bold">47</div>
-                      <div className="text-sm opacity-90">New Leads</div>
+                      <div className="text-2xl font-bold">{analyticsData.newLeads}</div>
+                      <div className="text-sm opacity-90">Active Users</div>
                     </div>
                     <div className="bg-white/10 rounded-lg p-4">
-                      <div className="text-2xl font-bold">23</div>
-                      <div className="text-sm opacity-90">Deals Closed</div>
+                      <div className="text-2xl font-bold">{analyticsData.dealsClosed}</div>
+                      <div className="text-sm opacity-90">Conversion Rate</div>
                     </div>
                     <div className="bg-white/10 rounded-lg p-4">
-                      <div className="text-2xl font-bold">89%</div>
-                      <div className="text-sm opacity-90">Target Met</div>
+                      <div className="text-2xl font-bold">{analyticsData.targetMet}%</div>
+                      <div className="text-sm opacity-90">Performance</div>
                     </div>
                   </div>
                 </div>

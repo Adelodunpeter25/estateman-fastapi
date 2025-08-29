@@ -10,7 +10,7 @@ from .core.exceptions import (
 )
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter
+from .models import user, permission, audit, navigation, dashboard, property, client, realtor, mlm, marketing, newsletter, analytics
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -72,6 +72,10 @@ app.include_router(user_management.router, prefix="/api/v1/user-management", tag
 # Import and include Transactions router
 from .api.v1.endpoints import transactions
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
+
+# Import and include Analytics router
+from .api.v1.endpoints import analytics
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 
 @app.get("/")
 async def root():

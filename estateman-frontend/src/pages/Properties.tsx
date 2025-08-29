@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { DashboardLayout } from "@/components/DashboardLayout"
+import { useAnalytics, usePageTracking } from "@/hooks/useAnalytics"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,9 @@ const Properties = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [mapProperties, setMapProperties] = useState<Property[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { trackClick, trackSearch, trackPropertyView } = useAnalytics()
+  
+  usePageTracking('properties')
 
   useEffect(() => {
     fetchProperties()
@@ -52,9 +56,11 @@ const Properties = () => {
         setLoading(true)
         const data = await propertiesService.searchProperties(searchTerm)
         setProperties(data)
+        trackSearch(searchTerm, data.length, { page: 'properties' })
       } catch (error: any) {
         console.error('Search failed:', error)
         setProperties([])
+        trackSearch(searchTerm, 0, { page: 'properties', error: true })
       } finally {
         setLoading(false)
       }
@@ -66,6 +72,7 @@ const Properties = () => {
   const handlePropertyView = (property: Property) => {
     setSelectedProperty(property)
     setShowPropertyModal(true)
+    trackPropertyView(property.id, property.property_type)
   }
 
   const handleEditPrice = async (property: Property) => {
@@ -286,7 +293,7 @@ const Properties = () => {
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
                   <p className="text-xs text-muted-foreground">
-                    <span className="text-green-600">{stat.change}</span> from last month
+                    Current period data
                   </p>
                 </CardContent>
               </Card>

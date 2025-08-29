@@ -4,6 +4,7 @@ import { RecentActivities } from "@/components/dashboard/RecentActivities"
 import { TopPerformers } from "@/components/dashboard/TopPerformers"
 import { SalesChart } from "@/components/dashboard/SalesChart"
 import { dashboardService, type DashboardOverview, type RecentActivity, type TopPerformer, type ChartData } from "@/services/dashboard"
+import { usePageTracking } from "@/hooks/useAnalytics"
 import { useState, useEffect } from "react"
 import { 
   Users, 
@@ -23,6 +24,8 @@ const Index = () => {
   const [performers, setPerformers] = useState<TopPerformer[]>([])
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  usePageTracking('dashboard')
 
   useEffect(() => {
     const fetchDashboardData = async () => {
